@@ -275,6 +275,7 @@ hybrid_pred_mine <- env[[2]]
 hybrid_pred_mine <- setValues(hybrid_pred_mine,NA)
 hybrid_pred_mine[which(!na_or_not)] <- hybrid_suit_me
 hybrid_pred_mine[which(getValues(hybrid_pred_mine) > 10)] <- 0
+hybrid_pred_mine[which(getValues(hybrid_pred_mine) > 0.000001)] <- 1
 plot(hybrid_pred_mine,xlim=c(-2000000,4000000),
      ylim=c(-1000000,3000000),
      main="hybrid")
@@ -284,4 +285,28 @@ plot(gauss_pred_mine,
      ylim=c(-1000000,3000000),
      main="gaussian")
 
-plot(kde_pred_mine,xlim=c(-2000000,4000000),ylim=c(-1000000,3000000),main="kde")
+plot(kde_pred_mine,
+     xlim=c(-2000000,4000000),
+     ylim=c(-1000000,3000000),
+     main="kde")
+
+
+vine_model <- fit_plug_and_play(presence = pres_env,background = bg_env,method = "vine")
+
+vine_suit <- project_plug_and_play(pnp_model = vine_model,
+                                        data = all_env_vals)
+vine_pred <- env[[2]]
+vine_pred <- setValues(vine_pred,NA)
+vine_pred[which(!na_or_not)] <- vine_suit
+vine_pred[which(getValues(vine_pred) > 10)] <- 0
+vine_pred[which(getValues(vine_pred) > 0.000001)] <- 1
+
+plot(vine_pred)
+plot(vine_pred,xlim=c(-2000000,4000000),
+     ylim=c(-1000000,3000000),
+     main="vine")
+
+
+
+
+
