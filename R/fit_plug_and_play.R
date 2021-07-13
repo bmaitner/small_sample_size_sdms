@@ -4,7 +4,7 @@
 #' @param presence_method Optional. Method for estimation of presence density.
 #' @param background_method Optional. Method for estimation of background density.
 #' @note Either `method` or both `presence_method` and `background_method` must be supplied.
-#' @details Current methods include: "gaussian"
+#' @details Current methods include: "gaussian", "kde"
 #' @export
 fit_plug_and_play <- function(presence,
                               background,
@@ -30,7 +30,7 @@ fit_plug_and_play <- function(presence,
   # Check that methods are available
   
   #for now do this manually, but once function skeleton is working do this by looking up available internals
-  current_modules <- c("gaussian")
+  current_modules <- c("gaussian","kde")
   
   if(!presence_method %in% current_modules) {
     stop(paste("Presence method not implemented. Please select one of: ",
@@ -43,10 +43,10 @@ fit_plug_and_play <- function(presence,
   }
   
   # Fit model components
-  f1 <- do.call(what = paste('pnp_', method, sep = ""),
+  f1 <- do.call(what = paste('pnp_', presence_method, sep = ""),
                 list(data = presence, method = "fit"))
   
-  f0 <- do.call(what = paste('pnp_', method, sep = ""),
+  f0 <- do.call(what = paste('pnp_', background_method, sep = ""),
                 list(data = background, method = "fit"))
   
   model <- list(f1 = f1,

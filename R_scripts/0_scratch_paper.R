@@ -24,12 +24,13 @@
   source("R/get_env_bg.R")
   source("R/fit_plug_and_play.R")
   source("R/pnp_gaussian.R")
+  source("R/pnp_kde.R")
   source("R/project_plug_and_play.R")
   
   all_env <- getValues(env)
   all_env_vals <-na.omit(all_env)
   
-  na_or_not<-
+  na_or_not <-
     apply(X = all_env,
           MARGIN = 1,
           FUN = function(x){
@@ -46,6 +47,9 @@
                        env = env,
                        width = 50000)) 
   
+#########  
+
+  #Making example plots of how the methods work 
   pp1 <- pp_gauss(p = pres_env[,1],
            bgrd = bg_env)
 
@@ -154,25 +158,23 @@
   abline(v = min(pres_env[,2],na.rm = T),lty=2)
   abline(v = max(pres_env[,2],na.rm = T),lty=2)
   
-  ###################################
-    suit1<-
+  suit1<-
     PlugNPlay:::predict.pp_mod(object = pp1,
-                             x = all_env_vals)
+                               x = all_env_vals)
   
   pred <- env[[2]]
   pred <- setValues(pred,NA)
   
   pred[which(!na_or_not)] <- suit1
   plot(pred,xlim=c(-2000000,4000000),ylim=c(-1000000,3000000))
-    
-hist(all_env_vals[,4])  
+  
   
   pp2 <- PlugNPlay::pp_kde(p = pres_env,
-                             bgrd = bg_env)
+                           bgrd = bg_env)
   
   suit2 <- PlugNPlay:::predict.pp_mod(object = pp2,
                                       x = all_env_vals) #interestingly, the predict here seems to be pretty slow.
-
+  
   pred2 <- env[[2]]
   pred2 <- setValues(pred2,NA)
   
@@ -182,27 +184,104 @@ hist(all_env_vals[,4])
   plot(pred2,xlim=c(-2000000,4000000),ylim=c(-1000000,3000000))
   pred2[which(getValues(pred2)>0.01)] <- 1
   plot(pred2)
-
-#make example plot to wrap head around idea
-  
   
 #######################################################################################
-#######################################################################################
 
+  
+#Gaussian
+
+gauss_drake <-    
+pp_gauss(p = pres_env,
+         bgrd = bg_env,
+         gauss_method = "classical")
+  
+gauss_suit_drake <-  
+PlugNPlay:::predict.pp_mod(object = gauss_drake,
+                           x = all_env_vals)  
   
 
 
-
-test_model <-  
+gauss_me <-  
 fit_plug_and_play(presence = pres_env,
                   background = bg_env,
                   method = "gaussian")
 
-test_suit <- project_plug_and_play(pnp_model = test_model,
+gauss_suit_me <- project_plug_and_play(pnp_model = gauss_me,
                                    data = all_env_vals)
 
-pred_mine <- env[[2]]
-pred_mine <- setValues(pred_mine,NA)
+gauss_pred_mine <- env[[2]]
+gauss_pred_mine <- setValues(gauss_pred_mine,NA)
+gauss_pred_mine[which(!na_or_not)] <- gauss_suit_me
+plot(gauss_pred_mine,xlim=c(-2000000,4000000),ylim=c(-1000000,3000000))
 
-pred_mine[which(!na_or_not)] <- test_suit
-plot(pred,xlim=c(-2000000,4000000),ylim=c(-1000000,3000000))
+gauss_pred_drake <- env[[2]]
+gauss_pred_drake <- setValues(gauss_pred_drake,NA)
+gauss_pred_drake[which(!na_or_not)] <- gauss_suit_drake
+plot(gauss_pred_drake,xlim=c(-2000000,4000000),ylim=c(-1000000,3000000))
+
+###gauss checks out
+
+# KDE
+  #KDE projections are pretty slow, possibly due to dimensionality issue?
+
+kde_drake <-    
+  pp_kde(p = pres_env,
+         bgrd = bg_env)
+  
+kde_suit_drake <-  
+  PlugNPlay:::predict.pp_mod(object = kde_drake,
+                             x = all_env_vals)  
+
+
+kde_me <-  
+  fit_plug_and_play(presence = pres_env,
+                    background = bg_env,
+                    method = "kde")
+
+kde_suit_me <- project_plug_and_play(pnp_model = kde_me,
+                                       data = all_env_vals)
+
+
+kde_pred_mine <- env[[2]]
+kde_pred_mine <- setValues(kde_pred_mine,NA)
+kde_pred_mine[which(!na_or_not)] <- kde_suit_me
+kde_pred_mine[which(getValues(kde_pred_mine)>10)]<-0
+plot(kde_pred_mine,xlim=c(-2000000,4000000),ylim=c(-1000000,3000000))
+
+kde_pred_drake <- env[[2]]
+kde_pred_drake <- setValues(kde_pred_drake,NA)
+kde_pred_drake[which(!na_or_not)] <- kde_suit_drake
+kde_pred_drake[which(getValues(kde_pred_drake)>2)]<-0
+plot(kde_pred_drake,xlim=c(-2000000,4000000),ylim=c(-1000000,3000000))
+
+# kde checks out
+
+####Hybrid
+
+hybrid_me <-  
+  fit_plug_and_play(presence = pres_env,
+                    background = bg_env,
+                    presence_method = "gaussian",
+                    background_method = "kde")
+
+hybrid_suit_me <- project_plug_and_play(pnp_model = hybrid_me,
+                                     data = all_env_vals)
+
+
+#currently using np::npudens for kde, but there may be a faster method?
+  #kdevine claims to not suffer from curse of dimensionality
+
+hybrid_pred_mine <- env[[2]]
+hybrid_pred_mine <- setValues(hybrid_pred_mine,NA)
+hybrid_pred_mine[which(!na_or_not)] <- hybrid_suit_me
+hybrid_pred_mine[which(getValues(hybrid_pred_mine) > 10)] <- 0
+plot(hybrid_pred_mine,xlim=c(-2000000,4000000),
+     ylim=c(-1000000,3000000),
+     main="hybrid")
+
+plot(gauss_pred_mine,
+     xlim=c(-2000000,4000000),
+     ylim=c(-1000000,3000000),
+     main="gaussian")
+
+plot(kde_pred_mine,xlim=c(-2000000,4000000),ylim=c(-1000000,3000000),main="kde")
