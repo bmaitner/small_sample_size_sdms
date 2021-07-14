@@ -2,21 +2,78 @@
 #' @param data covariate data
 #' @return A vector of relative suitabilities evaluates at the covariates supplied in the data object.
 project_plug_and_play <- function(pnp_model, data) {
-
+  
   #Check that pnp_model is the correct class
   if(class(pnp_model) != "pnp_model") {
     stop("Invalid pnp_model supplied.")
   }
-
-  f1_est <- do.call(what = paste('pnp_',pnp_model$f1_method,sep = ""),
-                    list(data = data,
-                         method = "predict",
-                         object = pnp_model$f1))
   
-  f0_est <- do.call(what = paste('pnp_',pnp_model$f0_method,sep = ""),
-                    list(data = data,
-                         method = "predict",
-                         object = pnp_model$f0))
-
-  return(S=exp(f1_est - f0_est))
+  
+  #Fit numerator
+  
+  if(pnp_model$f1_bs) {
+    #If bs WAS done, use a do.call for each iteration and average them
+    f1_est <- 0
+    
+    #It would be good to include a foreach option
+    for(i in 1:length(pnp_model$f1)){
+      f1_est <-
+        f1_est +
+        do.call(what = paste('pnp_',pnp_model$f1_method,sep = ""),
+                list(data = data,
+                     method = "predict",
+                     object = pnp_model$f1[[i]]))
+      
+      
+    }
+    
+    f1_est <- f1_est/length(pnp_model$f1)
+    
+    
+  }else{
+    
+    #If bs wasn't done, just use one do.call
+    f1_est <- do.call(what = paste('pnp_', pnp_model$f1_method, sep = ""),
+                      list(data = data,
+                           method = "predict",
+                           object = pnp_model$f1))  
+    
+    
+  }
+  
+  
+  
+  #Fit denominator
+  
+  if(pnp_model$f0_bs) {
+    #If bs WAS done, use a do.call for each iteration and average them
+    f0_est <- 0
+    
+    #It would be good to include a foreach option
+    for(i in 1:length(pnp_model$f0)){
+      f0_est <-
+        f0_est + 
+        do.call(what = paste('pnp_',pnp_model$f0_method,sep = ""),
+                list(data = data,
+                     method = "predict",
+                     object = pnp_model$f0[[i]]))
+      
+      
+    }
+    
+    f0_est <- f0_est/length(pnp_model$f0)
+    
+    
+  }else{
+    
+    #If bs wasn't done, just use one do.call
+    f0_est <- do.call(what = paste('pnp_',pnp_model$f0_method,sep = ""),
+                      list(data = data,
+                           method = "predict",
+                           object = pnp_model$f0))  
+    
+    
+  }
+  
+  return(S = exp(f1_est - f0_est))
 }

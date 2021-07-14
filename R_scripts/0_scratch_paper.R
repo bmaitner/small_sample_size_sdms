@@ -11,7 +11,7 @@
   library(raster)
   env <- stack(x = "C:/Users/Brian Maitner/Desktop/current_projects/BIENWorkflow/inst/extdata/Demo_Env/AllEnv.tif")
   names(env) <- read.csv("C:/Users/Brian Maitner/Desktop/current_projects/BIENWorkflow/inst/extdata/Demo_Env/layerNames.csv",header = F)[,1]
-
+  
 # load Drake Lab's plug n play package to check out
   library(PlugNPlay)
   
@@ -305,8 +305,32 @@ plot(vine_pred)
 plot(vine_pred,xlim=c(-2000000,4000000),
      ylim=c(-1000000,3000000),
      main="vine")
+#######################################
+
+num_hyb<-
+fit_plug_and_play(presence = pres_env,
+                  background = bg_env,
+                  presence_method = "gaussian",
+                  background_method = "vine",
+                  bootstrap = "numbag",
+                  bootstrap_reps = 10)
+
+pred_num_hyb <- project_plug_and_play(pnp_model = num_hyb,
+                                      data = all_env_vals)
+
+raster_pred_num_hyb <- setValues(env[[2]], NA)
+raster_pred_num_hyb[which(!na_or_not)] <- pred_num_hyb
+raster_pred_num_hyb[which(getValues(raster_pred_num_hyb) > 10000)] <- 0
+raster_pred_num_hyb[which(getValues(raster_pred_num_hyb) > 0.01)] <- 1
+
+plot(raster_pred_num_hyb)
+plot(raster_pred_num_hyb,
+     xlim=c(-2000000,4000000),
+     ylim=c(-1000000,3000000),
+     main="vine")
 
 
 
 
-
+#there are some copula methods that handle low-dimensional data
+  #- cort is one, but doesn't seem to handle density estimation well.
