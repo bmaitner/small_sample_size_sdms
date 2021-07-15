@@ -24,6 +24,8 @@
   source("R/get_env_bg.R")
   source("R/fit_plug_and_play.R")
   source("R/pnp_gaussian.R")
+  source("R/pnp_rangebagging.R")
+  source("R/pnp_none.R")
   source("R/pnp_kde.R")
   source("R/project_plug_and_play.R")
   
@@ -320,7 +322,7 @@ pred_num_hyb <- project_plug_and_play(pnp_model = num_hyb,
 
 raster_pred_num_hyb <- setValues(env[[2]], NA)
 raster_pred_num_hyb[which(!na_or_not)] <- pred_num_hyb
-raster_pred_num_hyb[which(getValues(raster_pred_num_hyb) > 10000)] <- 0
+raster_pred_num_hyb[which(getValues(raster_pred_num_hyb) > 100)] <- 0
 raster_pred_num_hyb[which(getValues(raster_pred_num_hyb) > 0.01)] <- 1
 
 plot(raster_pred_num_hyb)

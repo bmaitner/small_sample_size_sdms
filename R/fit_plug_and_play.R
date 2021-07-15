@@ -8,7 +8,7 @@
 #' or "doublebag" (presence and background functions are bootstrapped).
 #' @param bootstrap_reps Integer.  Number of bootstrap replicates to use (default is 100)
 #' @note Either `method` or both `presence_method` and `background_method` must be supplied.
-#' @details Current methods include: "gaussian", "kde","vine".
+#' @details Current methods include: "gaussian", "kde","vine","rangebagging", and "none".
 #' @export
 fit_plug_and_play <- function(presence,
                               background,
@@ -36,16 +36,16 @@ fit_plug_and_play <- function(presence,
   # Check that methods are available
   
   #for now do this manually, but once function skeleton is working do this by looking up available internals
-  current_modules <- c("gaussian","kde","vine")
+  current_modules <- c("gaussian","kde","vine","rangebagging","none")
   
   if(!presence_method %in% current_modules) {
     stop(paste("Presence method not implemented. Please select one of: ",
-               current_modules,".", sep = ""))
+               paste(current_modules,collapse = ", "),".",sep =  ))
   }
   
   if(!background_method %in% current_modules) {
     stop(paste("Background method not implemented. Please select one of: ",
-               current_modules,".", sep = ""))
+               paste(current_modules,collapse = ", "),".",sep =  ))
   }
   
   #Set bootstrapping options

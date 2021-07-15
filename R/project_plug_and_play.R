@@ -9,6 +9,7 @@ project_plug_and_play <- function(pnp_model, data) {
   }
   
   
+
   #Fit numerator
   
   if(pnp_model$f1_bs) {
@@ -75,5 +76,24 @@ project_plug_and_play <- function(pnp_model, data) {
     
   }
   
+  
+  #If presence only
+  if(pnp_model$f0_method == "none"){
+    
+    return(S = exp(f1_est))
+    
+  }
+  
+  #If backgruond only (not sure why you'd do this, but whatever)
+  if(pnp_model$f0_method == "none"){
+    
+    return(S = exp(f0_est))
+    
+  }
+  
+  #If a full presence/background model
   return(S = exp(f1_est - f0_est))
+
+  
+  
 }
