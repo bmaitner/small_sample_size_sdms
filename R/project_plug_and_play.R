@@ -77,6 +77,13 @@ project_plug_and_play <- function(pnp_model, data) {
   }
   
   
+  #If someone made an empty model, return nothing
+  if(pnp_model$f0_method == "none" & pnp_model$f0_method == "none"){
+    
+    return(invisible(NULL))
+    
+  }
+  
   #If presence only
   if(pnp_model$f0_method == "none"){
     
@@ -85,7 +92,7 @@ project_plug_and_play <- function(pnp_model, data) {
   }
   
   #If backgruond only (not sure why you'd do this, but whatever)
-  if(pnp_model$f0_method == "none"){
+  if(pnp_model$f1_method == "none"){
     
     return(S = exp(f0_est))
     
