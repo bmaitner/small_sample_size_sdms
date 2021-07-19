@@ -312,16 +312,17 @@ plot(vine_pred,xlim=c(-2000000,4000000),
 num_hyb<-
 fit_plug_and_play(presence = pres_env,
                   background = bg_env,
-                  presence_method = "gaussian",
-                  background_method = "vine",
-                  bootstrap = "numbag",
-                  bootstrap_reps = 10)
+                  presence_method = "rangebagging",
+                  background_method = "none",
+                  bootstrap = ,
+                  bootstrap_reps = )
 
 pred_num_hyb <- project_plug_and_play(pnp_model = num_hyb,
                                       data = all_env_vals)
 
 raster_pred_num_hyb <- setValues(env[[2]], NA)
 raster_pred_num_hyb[which(!na_or_not)] <- pred_num_hyb
+plot(raster_pred_num_hyb, main="rangebagging no numbag")
 raster_pred_num_hyb[which(getValues(raster_pred_num_hyb) > 100)] <- 0
 raster_pred_num_hyb[which(getValues(raster_pred_num_hyb) > 0.01)] <- 1
 

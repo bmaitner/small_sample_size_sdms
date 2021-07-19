@@ -98,7 +98,7 @@ pnp_rangebagging <- function(data, method, object = NULL, v = 100, d = 1, p = 0.
     
     prediction <- (prediction/v)
 
-    return(prediction)  
+    return(log(prediction))  
   }
   
 }
