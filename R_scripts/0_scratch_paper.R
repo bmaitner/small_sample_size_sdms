@@ -28,6 +28,9 @@
   source("R/pnp_none.R")
   source("R/pnp_kde.R")
   source("R/project_plug_and_play.R")
+  source("R/fit_density_ratio.R")
+  source("R/project_density_ratio.R")
+  source("R/dr_ulsif.R")
   
   all_env <- getValues(env)
   all_env_vals <-na.omit(all_env)
@@ -45,9 +48,13 @@
   
   pres_env <- na.omit(get_env_pres(coords = occs[c("longitude","latitude")],
                            env = env)) 
-  bg_env <- na.omit(get_env_bg(coords = occs[c("longitude","latitude")],
+  bg_env <- get_env_bg(coords = occs[c("longitude","latitude")],
                        env = env,
-                       width = 50000)) 
+                       width = 50000) 
+  
+  bg_cells <- bg_env$bg_cells
+  bg_env <- bg_env$env
+  
   
 #########  
 
@@ -337,3 +344,18 @@ plot(raster_pred_num_hyb,
 
 #there are some copula methods that handle low-dimensional data
   #- cort is one, but doesn't seem to handle density estimation well.
+
+#################################################
+dr_model <- fit_density_ratio(presence = pres_env,
+                  background = bg_env,
+                  method = "ulsif")
+
+
+dr_predict <- project_density_ratio(dr_model = dr_model,data = bg_env )
+
+dr <- setValues(x = env[[2]],values = NA)
+dr[bg_cells] <- dr_predict
+plot(dr)
+
+
+

@@ -19,12 +19,36 @@ get_env_bg <- function(coords, env, method = "buffer", width) {
   
   coords <- spTransform(x = coords,CRSobj = env@crs)    
   
+  #make buffer
   buff <-
   buffer(x = coords,
          width = width)
   
+  #remove any partial NAs from buffer(since we don't want to use them)
+  buff_rast <- rasterize(y = env,x = buff)
+  buffer_cells <- which(getValues(buff_rast)==1)
   
-  return(test <- do.call(rbind,extract(y = buff,x = env)))
+  env <- do.call(rbind,extract(y = buff,x = env))
+  
+  na_or_not <-
+    apply(X = env,
+          MARGIN = 1,
+          FUN = function(x){
+            any(is.na(x))
+            
+          }
+    )
+  
+  buffer_cells <- buffer_cells[which(!na_or_not)]
+  
+  env <- env[which(!na_or_not),]
+  
+
+  if(dim(env)[1]!=length(buffer_cells)){stop("Something wrong with get_env_bg")}
+  
+  
+  return(test <- list(env = env,
+                      bg_cells = buffer_cells))
   
   
 }# end fx
