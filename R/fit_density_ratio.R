@@ -2,7 +2,7 @@
 #' @param background Optional. Dataframe of covariates at background points
 #' @param method Optional. If supplied, both presence and background density estimation will use this method.
 #' @param ... Additional parameters passed to internal functions.
-#' @details Current methods include:.
+#' @details Current methods include: "ulsif", "rulsif","kliep"
 #' @export
 #' @return List of class "dr_model" containing model objects and metadata needed for projecting the fitted models.
 fit_density_ratio <- function(presence = NULL,

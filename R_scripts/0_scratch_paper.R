@@ -348,7 +348,7 @@ plot(raster_pred_num_hyb,
 #################################################
 dr_model <- fit_density_ratio(presence = pres_env,
                   background = bg_env,
-                  method = "ulsif")
+                  method = "kliep")
 
 
 dr_predict <- project_density_ratio(dr_model = dr_model,data = bg_env )
@@ -356,6 +356,17 @@ dr_predict <- project_density_ratio(dr_model = dr_model,data = bg_env )
 dr <- setValues(x = env[[2]],values = NA)
 dr[bg_cells] <- dr_predict
 plot(dr)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
