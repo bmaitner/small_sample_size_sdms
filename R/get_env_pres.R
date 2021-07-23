@@ -17,7 +17,8 @@ coords <- sp::SpatialPoints(coords = coords,
 
 coords <- spTransform(x = coords,CRSobj = env@crs)    
 
-return(extract(y = coords,x = env))
+return(test <- list(env = extract(y = coords,x = env),
+                    occurrence_sp = coords))
 
   
 }# end fx

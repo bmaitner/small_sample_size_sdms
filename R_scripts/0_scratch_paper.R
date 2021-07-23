@@ -31,7 +31,9 @@
   source("R/fit_density_ratio.R")
   source("R/project_density_ratio.R")
   source("R/dr_ulsif.R")
+  source("R/dr_kliep.R")
   
+  #env <- scale(env)
   all_env <- getValues(env)
   all_env_vals <-na.omit(all_env)
   
@@ -44,10 +46,12 @@
           }
     )
   
-  occs <- read.csv(occurrence_files[3])
+  occs <- read.csv(occurrence_files[3])#some acacia
+  #occs <- read.csv(occurrence_files[4])#some acaena
   
   pres_env <- na.omit(get_env_pres(coords = occs[c("longitude","latitude")],
-                           env = env)) 
+                           env = env))
+  
   bg_env <- get_env_bg(coords = occs[c("longitude","latitude")],
                        env = env,
                        width = 50000) 
@@ -348,25 +352,26 @@ plot(raster_pred_num_hyb,
 #################################################
 dr_model <- fit_density_ratio(presence = pres_env,
                   background = bg_env,
-                  method = "kliep")
-
-
-dr_predict <- project_density_ratio(dr_model = dr_model,data = bg_env )
-
-dr <- setValues(x = env[[2]],values = NA)
-dr[bg_cells] <- dr_predict
-plot(dr)
+                  method = "kliep") #Note: kliep fitting seems to work better when variables have been scaled
 
 
 
 
+x1 <- rnorm(200, mean = 1, sd = 1/8)
+x2 <- rnorm(200, mean = 1, sd = 1/2)
 
+result <- densratio(x1, x2,method = "KLIEP")
 
+new_x <- seq(0, 2, by = 0.05)
+new_x <- seq(-10, 10, by = 0.05)
+w_hat <- result$compute_density_ratio(new_x)
+length(w_hat) == length(new_x)
 
-
-
-
-
+library(np)
+npcdensbw(pres_env ~ bg_env)
+?npcdensbw
+np::npcdens(xdat = )
+?npcdens
 
 
 

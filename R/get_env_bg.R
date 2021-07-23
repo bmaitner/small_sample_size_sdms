@@ -1,8 +1,9 @@
 #' @param coords Coordinates (long,lat) to extract values for
 #' @param env Environmental rasterstack in any projection 
 #' @param method Methods for getting bg points. Current option is buffer
-#' @param width Numeric.  Width (meters or map units) of buffer
-get_env_bg <- function(coords, env, method = "buffer", width) {
+#' @param width Numeric or NULL.  Width (meters or map units) of buffer. If NULL, uses max dist between nearest occurrences.
+#' @param returns A list containing 1) the background data, 2) the cell indices for which the background was taken
+get_env_bg <- function(coords, env, method = "buffer", width = NULL) {
   
   #check for bad coords
   
@@ -14,10 +15,32 @@ get_env_bg <- function(coords, env, method = "buffer", width) {
     message("Problematic coords")
   }
   
+  #Convert to spatialpoints
   coords <- sp::SpatialPoints(coords = coords,
                               proj4string = CRS(projargs = "EPSG:4326"))
   
-  coords <- spTransform(x = coords,CRSobj = env@crs)    
+  #convert to env raster projection
+  coords <- spTransform(x = coords,
+                        CRSobj = env@crs)    
+  
+  #set buffer size based on coordinate distances if distance null
+  if(is.null(width)){
+    
+  dists <- spDists(coords)
+  
+    #This commented out code can be used to get max nearest-neighbor distance instead
+    # max(apply(X = spDists(coords),
+    #       MARGIN = 1,
+    #       FUN = function(x){
+    #         min(x[which(x>0)])
+    #         }
+    #       ))
+        
+    width <- max(dists[which(dists>0)])
+    rm(dists)
+    
+  }
+  
   
   #make buffer
   buff <-
