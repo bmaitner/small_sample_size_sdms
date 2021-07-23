@@ -96,6 +96,6 @@ make_range_map(occurrences,
     
     
   
-  
+    return(prediction_raster)
   
 }
