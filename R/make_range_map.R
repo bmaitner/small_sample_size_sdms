@@ -21,12 +21,12 @@ occurrences <- occs[c("longitude","latitude")]
 #' "numbag" (presence function is bootstrapped),
 #' or "doublebag" (presence and background functions are bootstrapped).
 #' @param bootstrap_reps Integer.  Number of bootstrap replicates to use (default is 100)
-#' @param quantile Quantile to use for thresholding.  Default is 0.05 (5 pct training presence). Set to 0 for minimum trainin presence (MTP).
+#' @param quantile Quantile to use for thresholding.  Default is 0.05 (5 pct training presence). Set to 0 for minimum trainin presence (MTP), set to NULL to return continuous raster.
 #' @param ... Additional parameters passed to internal functions.
 #' @note Either `method` or both `presence_method` and `background_method` must be supplied.
 #' @details Current plug-and-play methods include: "gaussian", "kde","vine","rangebagging", "lobagoc", and "none".
 #' Current density ratio methods include: "ulsif", "rulsif".
-make_range_map(occurrences,
+make_range_map <- function(occurrences,
                env,
                method = NULL,
                presence_method = NULL,
@@ -88,11 +88,17 @@ make_range_map(occurrences,
       prediction_raster <- setValues(env[[1]],
                           values = NA)
       prediction_raster[bg_data$bg_cells] <- predictions
+    
       
+        
     #Apply thresholding
+      
+    if(!is.null(quantile)){
       prediction_raster <- sdm_threshold(prediction_raster = prediction_raster,
                                          occurrence_sp = presence_data$occurrence_sp,
                                          quantile = quantile)
+    }  
+      
     
     
   

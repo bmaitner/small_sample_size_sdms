@@ -8,7 +8,8 @@
 #' @author Cecina Babich Morrow (modified by Brian Maitner)
 sdm_threshold <- function(prediction_raster,
                           occurrence_sp,
-                          quantile = 0.05,return_binary = TRUE){
+                          quantile = 0.05,
+                          return_binary = TRUE){
 
   predictions_at_occurrences <- extract(y = occurrence_sp,
                                         x = prediction_raster)

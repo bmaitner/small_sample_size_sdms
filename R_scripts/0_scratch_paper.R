@@ -13,13 +13,15 @@
   names(env) <- read.csv("C:/Users/Brian Maitner/Desktop/current_projects/BIENWorkflow/inst/extdata/Demo_Env/layerNames.csv",header = F)[,1]
   
 # load Drake Lab's plug n play package to check out
-  library(PlugNPlay)
+  #library(PlugNPlay)
   
   
 ##################
 
   #Quick and dirty sampling of presences and absences
-
+  
+  library(np)
+  library(rvinecopulib)
   source("R/get_env_pres.R")
   source("R/get_env_bg.R")
   source("R/fit_plug_and_play.R")
@@ -31,7 +33,8 @@
   source("R/fit_density_ratio.R")
   source("R/project_density_ratio.R")
   source("R/dr_ulsif.R")
-  source("R/dr_kliep.R")
+  source("R/evaluate_range_map.R")
+  source("R/get_auc.R")
   
   #env <- scale(env)
   all_env <- getValues(env)
@@ -53,18 +56,14 @@
                            env = env))
   
   bg_env <- get_env_bg(coords = occs[c("longitude","latitude")],
-                       env = env,
-                       width = 50000) 
-  
-  bg_cells <- bg_env$bg_cells
-  bg_env <- bg_env$env
+                       env = env) 
   
   
 #########  
 
   #Making example plots of how the methods work 
-  pp1 <- pp_gauss(p = pres_env[,1],
-           bgrd = bg_env)
+  pp1 <- pp_gauss(p = pres_env$env[,1],
+           bgrd = bg_env$env)
 
   #example plot  
   ex<-pp_gauss(p = as.data.frame(pres_env[,2]),
@@ -215,16 +214,15 @@ PlugNPlay:::predict.pp_mod(object = gauss_drake,
 
 
 gauss_me <-  
-fit_plug_and_play(presence = pres_env,
-                  background = bg_env,
+fit_plug_and_play(presence = pres_env$env,
+                  background = bg_env$env,
                   method = "gaussian")
 
 gauss_suit_me <- project_plug_and_play(pnp_model = gauss_me,
-                                   data = all_env_vals)
+                                   data = bg_env$env)
 
-gauss_pred_mine <- env[[2]]
-gauss_pred_mine <- setValues(gauss_pred_mine,NA)
-gauss_pred_mine[which(!na_or_not)] <- gauss_suit_me
+gauss_pred_mine <- setValues(env[[2]],NA)
+gauss_pred_mine[bg_env$bg_cells] <- gauss_suit_me
 plot(gauss_pred_mine,xlim=c(-2000000,4000000),ylim=c(-1000000,3000000))
 
 gauss_pred_drake <- env[[2]]
@@ -272,20 +270,35 @@ plot(kde_pred_drake,xlim=c(-2000000,4000000),ylim=c(-1000000,3000000))
 ####Hybrid
 
 hybrid_me <-  
-  fit_plug_and_play(presence = pres_env,
-                    background = bg_env,
+  fit_plug_and_play(presence = pres_env$env,
+                    background = bg_env$env,
                     presence_method = "gaussian",
-                    background_method = "kde")
+                    background_method = "gaussian",
+                    bootstrap = "doublebag")
 
 hybrid_suit_me <- project_plug_and_play(pnp_model = hybrid_me,
                                      data = all_env_vals)
+
+gaussian_doublebag_auc <-evaluate_range_map(occurrences = occurrences,
+                   env = env,
+                   method = "gaussian",
+                   bootstrap = "doublebag")
+
+gaussian_auc <-evaluate_range_map(occurrences = occurrences,
+                                            env = env,
+                                            method = "gaussian",
+                                            bootstrap = "none")
+
+gaussian_numbag <-evaluate_range_map(occurrences = occurrences,
+                                  env = env,
+                                  method = "gaussian",
+                                  bootstrap = "numbag")
 
 
 #currently using np::npudens for kde, but there may be a faster method?
   #kdevine claims to not suffer from curse of dimensionality
 
-hybrid_pred_mine <- env[[2]]
-hybrid_pred_mine <- setValues(hybrid_pred_mine,NA)
+hybrid_pred_mine <- setValues(env[[2]],NA)
 hybrid_pred_mine[which(!na_or_not)] <- hybrid_suit_me
 hybrid_pred_mine[which(getValues(hybrid_pred_mine) > 10)] <- 0
 hybrid_pred_mine[which(getValues(hybrid_pred_mine) > 0.000001)] <- 1
@@ -320,16 +333,14 @@ plot(vine_pred,xlim=c(-2000000,4000000),
      main="vine")
 #######################################
 
-num_hyb<-
-fit_plug_and_play(presence = pres_env,
-                  background = bg_env,
+num_hyb <-
+fit_plug_and_play(presence = pres_env$env,
+                  background = bg_env$env,
                   presence_method = "rangebagging",
-                  background_method = "none",
-                  bootstrap = ,
-                  bootstrap_reps = )
+                  background_method = "none")
 
 pred_num_hyb <- project_plug_and_play(pnp_model = num_hyb,
-                                      data = all_env_vals)
+                                      data = bg_env$env)
 
 raster_pred_num_hyb <- setValues(env[[2]], NA)
 raster_pred_num_hyb[which(!na_or_not)] <- pred_num_hyb
@@ -350,28 +361,3 @@ plot(raster_pred_num_hyb,
   #- cort is one, but doesn't seem to handle density estimation well.
 
 #################################################
-dr_model <- fit_density_ratio(presence = pres_env,
-                  background = bg_env,
-                  method = "kliep") #Note: kliep fitting seems to work better when variables have been scaled
-
-
-
-
-x1 <- rnorm(200, mean = 1, sd = 1/8)
-x2 <- rnorm(200, mean = 1, sd = 1/2)
-
-result <- densratio(x1, x2,method = "KLIEP")
-
-new_x <- seq(0, 2, by = 0.05)
-new_x <- seq(-10, 10, by = 0.05)
-w_hat <- result$compute_density_ratio(new_x)
-length(w_hat) == length(new_x)
-
-library(np)
-npcdensbw(pres_env ~ bg_env)
-?npcdensbw
-np::npcdens(xdat = )
-?npcdens
-
-
-
