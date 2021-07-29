@@ -49,7 +49,7 @@ evaluate_range_map <- function(occurrences,
                                 testing_pAUC_specificity = NA,
                                 testing_pAUC_sensitivity = NA,
                                 testing_DOR = NA,
-                                testin_prediction_accuracy = NA,
+                                testing_prediction_accuracy = NA,
                                 testing_sensitivity = NA,
                                 testing_specificity = NA)
               
@@ -207,7 +207,7 @@ evaluate_range_map <- function(occurrences,
                         out$testing_DOR[i] <- DOR
                         out$testing_prediction_accuracy[i] <- prediction_accuracy
                         out$testing_sensitivity[i] <- sensitivity
-                        out$training_pAUC_specificity[i] <- specificity
+                        out$testing_specificity[i] <- specificity
                         
                 
                 #Fit full model
