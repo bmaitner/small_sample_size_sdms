@@ -15,7 +15,8 @@ sdm_threshold <- function(prediction_raster,
                                         x = prediction_raster)
 
   threshold <- stats::quantile(x = predictions_at_occurrences,
-                               probs = quantile)
+                               probs = quantile,
+                               na.rm = T)
 
   if(return_binary){
 

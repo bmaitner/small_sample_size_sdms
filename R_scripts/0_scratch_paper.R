@@ -12,6 +12,12 @@
   env <- stack(x = "C:/Users/Brian Maitner/Desktop/current_projects/BIENWorkflow/inst/extdata/Demo_Env/AllEnv.tif")
   names(env) <- read.csv("C:/Users/Brian Maitner/Desktop/current_projects/BIENWorkflow/inst/extdata/Demo_Env/layerNames.csv",header = F)[,1]
   
+# get continent data
+  library(sp)
+  library(maptools)
+  continents <- rgdal::readOGR(dsn = "C:/Users/Brian Maitner/Desktop/current_projects/global_plant_phylo/data/continents/4a7d27e1-84a3-4d6a-b4c2-6b6919f3cf4b202034-1-2zg7ul.ht5ut.shp")
+  continents <- spTransform(x = continents,CRSobj = env@crs)
+    
 # load Drake Lab's plug n play package to check out
   #library(PlugNPlay)
   
@@ -56,7 +62,8 @@
                            env = env))
   
   bg_env <- get_env_bg(coords = occs[c("longitude","latitude")],
-                       env = env) 
+                       env = env,
+                       constraint_regions = continents) 
   
   
 #########  
@@ -284,15 +291,17 @@ gaussian_doublebag_auc <-evaluate_range_map(occurrences = occurrences,
                    method = "gaussian",
                    bootstrap = "doublebag")
 
-gaussian_auc <-evaluate_range_map(occurrences = occurrences,
+gaussian_auc <-evaluate_range_map(occurrences = occs[c("longitude","latitude")],
                                             env = env,
                                             method = "gaussian",
-                                            bootstrap = "none")
+                                            bootstrap = "none",
+                                  constraint_regions = continents)
 
-gaussian_numbag <-evaluate_range_map(occurrences = occurrences,
+gaussian_numbag <-evaluate_range_map(occurrences = occs[c("longitude","latitude")],
                                   env = env,
                                   method = "gaussian",
-                                  bootstrap = "numbag")
+                                  bootstrap = "numbag",
+                                  constraint_regions = continents)
 
 
 #currently using np::npudens for kde, but there may be a faster method?

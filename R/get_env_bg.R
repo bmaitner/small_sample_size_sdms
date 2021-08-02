@@ -2,8 +2,12 @@
 #' @param env Environmental rasterstack in any projection 
 #' @param method Methods for getting bg points. Current option is buffer
 #' @param width Numeric or NULL.  Width (meters or map units) of buffer. If NULL, uses max dist between nearest occurrences.
+#' @param constraint_regions An optional spatialpolygons* object that can be used to limit the selection of background points.
 #' @param returns A list containing 1) the background data, 2) the cell indices for which the background was taken
-get_env_bg <- function(coords, env, method = "buffer", width = NULL) {
+#' @note If supplying constraint_regions, and polygons in which the occurrences fall are considered fair game for background selection.
+#' This background selection is, however, still limited by the buffer as well.
+#' @importFrom raster intersect
+get_env_bg <- function(coords, env, method = "buffer", width = NULL, constraint_regions = NULL) {
   
   #check for bad coords
   
@@ -47,8 +51,28 @@ get_env_bg <- function(coords, env, method = "buffer", width = NULL) {
   buffer(x = coords,
          width = width)
   
+  
+  #Optionally, limit by polygons supplied
+  
+  if(!is.null(constraint_regions)){
+    
+    #convert to env raster projection
+    constraint_regions <- spTransform(x = constraint_regions,
+                          CRSobj = env@crs)
+    
+    buff <- raster::intersect(x = buff,
+                           y = constraint_regions[coords,])
+    
+    buff <- raster::aggregate(buff)
+    
+    }
+  
+
+  
+  
   #remove any partial NAs from buffer(since we don't want to use them)
-  buff_rast <- rasterize(y = env,x = buff)
+  buff_rast <- rasterize(y = env,
+                         x = buff)
   buffer_cells <- which(getValues(buff_rast)==1)
   
   env <- do.call(rbind,extract(y = buff,x = env))

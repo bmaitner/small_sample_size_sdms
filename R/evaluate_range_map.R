@@ -1,4 +1,7 @@
 
+source("R/stratify_spatial.R")
+source("R/sdm_threshold.R")
+
 #' @param occurrences Presence coordinates in long,lat format.
 #' @param env Environmental rasters
 #' @param method Optional. If supplied, both presence and background density estimation will use this method.
@@ -9,6 +12,7 @@
 #' or "doublebag" (presence and background functions are bootstrapped).
 #' @param bootstrap_reps Integer.  Number of bootstrap replicates to use (default is 100)
 #' @param quantile Quantile to use for thresholding.  Default is 0.05 (5 pct training presence). Set to 0 for minimum trainin presence (MTP).
+#' @param constraint_regions See get_env_bg documentation
 #' @param ... Additional parameters passed to internal functions.
 #' @note Either `method` or both `presence_method` and `background_method` must be supplied.
 #' @details Current plug-and-play methods include: "gaussian", "kde","vine","rangebagging", "lobagoc", and "none".
@@ -21,8 +25,24 @@ evaluate_range_map <- function(occurrences,
                                background_method = NULL,
                                bootstrap = "none",
                                bootstrap_reps = 100,
-                               quantile = 0.05){
+                               quantile = 0.05,
+                               constraint_regions = NULL){
               
+  
+  # Check that methods were supplied
+  if(is.null(method) & (is.null(presence_method) &
+                        is.null(background_method))) {
+    stop("Please supply either (1) method, or (2) both presence_method and background_method")
+  }
+  
+  
+  # Assign methods if needed
+  if(!is.null(method)) {
+    
+    presence_method <- method
+    background_method <- method
+    
+  }
               #Note that this is overkill, since we don't need the presence data, just the spatialpoints file, but it prevents code duplication.
               presence_data <- get_env_pres(coords = occurrences,
                                             env = env)
@@ -38,7 +58,8 @@ evaluate_range_map <- function(occurrences,
               bg_data <- get_env_bg(coords = occurrences,
                                     env = env,
                                     method = "buffer",
-                                    width = NULL)
+                                    width = NULL,
+                                    constraint_regions = constraint_regions)
               
               #Make empty output
               out <- data.frame(fold = 1:length(unique(presence_data$occurrence_sp$fold)),
@@ -217,6 +238,8 @@ evaluate_range_map <- function(occurrences,
                         out$testing_sensitivity[i] <- sensitivity
                         out$testing_specificity[i] <- specificity
                         out$testing_kappa[i] <- kappa
+                        
+                        fold_testing_suitability_v_occurrence <- na.omit(fold_testing_suitability_v_occurrence)
                         out$testing_correlation[i] <- cor(fold_testing_suitability_v_occurrence$suitability,fold_testing_suitability_v_occurrence$occurrence)
                 
                 #Fit full model
@@ -261,7 +284,13 @@ evaluate_range_map <- function(occurrences,
                                                                data = bg_data$env)
                           
                           
-                        }  
+                        } 
+                        
+                        #Convert predictions to a raster
+                        prediction_raster <- setValues(env[[1]],
+                                                       values = NA)
+                        
+                        prediction_raster[bg_data$bg_cells] <- predictions
                         
                         full_suitability_v_occurrence <-
                           rbind(data.frame(suitability = prediction_raster[presence_data$occurrence_sp],
@@ -285,6 +314,8 @@ evaluate_range_map <- function(occurrences,
                                                                partial.auc.focus = "sensitivity")[[1]]
                         
                         out_full$full_AUC <- testing_roc_obj$auc
+                        
+                        full_suitability_v_occurrence <- na.omit(full_suitability_v_occurrence)
                         
                         out_full$full_correlation <- cor(x = full_suitability_v_occurrence$suitability,
                                                          y = full_suitability_v_occurrence$occurrence,
