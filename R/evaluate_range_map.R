@@ -51,11 +51,14 @@ evaluate_range_map <- function(occurrences,
                                 testing_DOR = NA,
                                 testing_prediction_accuracy = NA,
                                 testing_sensitivity = NA,
-                                testing_specificity = NA)
+                                testing_specificity = NA,
+                                testing_correlation = NA,
+                                testing_kappa = NA)
               
               out_full <- data.frame(full_AUC = NA,
                                      full_pAUC_specificity = NA,
-                                     full_pAUC_sensitivity = NA)
+                                     full_pAUC_sensitivity = NA,
+                                     full_correlation = NA)
               
               #iterate through folds
               for(i in 1:length(unique(presence_data$occurrence_sp$fold))){
@@ -202,13 +205,19 @@ evaluate_range_map <- function(occurrences,
                         DOR <- (TP*TN)/(FP*FN)
                         #F1 <- 2*((precision * sensitivity)/(precision + sensitivity))
                         prediction_accuracy <- (TP+TN)/(TP+TN+FP+FN)
+                        P_o <- (TP+TN)/(TP+TN+FP+FN)
+                        Ppres <- ((TP+FP)/(TP+TN+FP+FN))*((TP+FN)/(TP+TN+FP+FN))
+                        Pabs <- ((FN+TN)/(TP+TN+FP+FN))*((FP+TN)/(TP+TN+FP+FN))
+                        P_e <- Ppres+Pabs
+                        kappa <- (P_o - P_e)/(1-P_e)
                         
-                        
+                      
                         out$testing_DOR[i] <- DOR
                         out$testing_prediction_accuracy[i] <- prediction_accuracy
                         out$testing_sensitivity[i] <- sensitivity
                         out$testing_specificity[i] <- specificity
-                        
+                        out$testing_kappa[i] <- kappa
+                        out$testing_correlation[i] <- cor(fold_testing_suitability_v_occurrence$suitability,fold_testing_suitability_v_occurrence$occurrence)
                 
                 #Fit full model
                 
@@ -276,8 +285,12 @@ evaluate_range_map <- function(occurrences,
                                                                partial.auc.focus = "sensitivity")[[1]]
                         
                         out_full$full_AUC <- testing_roc_obj$auc
-                
-                
+                        
+                        out_full$full_correlation <- cor(x = full_suitability_v_occurrence$suitability,
+                                                         y = full_suitability_v_occurrence$occurrence,
+                                                         method = "pearson")
+                        
+                        
                 #Threshold full model
                 
                 
