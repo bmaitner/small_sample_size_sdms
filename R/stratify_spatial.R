@@ -36,7 +36,11 @@ stratify_spatial <- function(occurrence_sp,
       occurrence_sp <- SpatialPointsDataFrame(coords = occurrence_sp,
                                               data = data.frame(fold = folds))
       
-      stop('Get some more data if you want to do spatial CV. All samples assigned to fold 1.')
+      message('Get some more data if you want to do spatial CV. All samples assigned to fold 1.')
+      
+      return(occurrence_sp)
+      
+      
     }
     
     #If there are enough records for CV, continue

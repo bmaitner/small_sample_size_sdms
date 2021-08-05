@@ -303,17 +303,17 @@ evaluate_range_map <- function(occurrences,
                         
 
                         
-                        out_full$full_pAUC_specificity <- auc(roc = testing_roc_obj,
+                        out_full$full_pAUC_specificity <- auc(roc = full_roc_obj,
                                                                partial.auc = c(.8, 1),
                                                                partial.auc.correct = TRUE,
                                                                partial.auc.focus = "specificity")[[1]]
                         
-                        out_full$full_pAUC_sensitivity <- auc(roc = testing_roc_obj,
+                        out_full$full_pAUC_sensitivity <- auc(roc = full_roc_obj,
                                                                partial.auc = c(.8, 1),
                                                                partial.auc.correct = TRUE,
                                                                partial.auc.focus = "sensitivity")[[1]]
                         
-                        out_full$full_AUC <- testing_roc_obj$auc
+                        out_full$full_AUC <- full_roc_obj$auc
                         
                         full_suitability_v_occurrence <- na.omit(full_suitability_v_occurrence)
                         

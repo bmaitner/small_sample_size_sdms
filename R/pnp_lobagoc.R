@@ -1,3 +1,5 @@
+library(kernlab)
+
 #' @param data dataframe of covariates
 #' @param method one of either "fit" or "predict"
 #' @param object fitted object returned by a pnp_... function. Only needed when method = "predict" 
@@ -49,11 +51,11 @@ pnp_lobagoc <- function(data, method, object = NULL, v = 100, nu = 0.01, sigma =
   
   if(method == "predict"){
     
-    v <- length(model$lobagoc_models)
+    v <- length(object$lobagoc_models)
     prediction <- data[,1]*0 
 
-    for(i in 1:n.votes){
-      prediction <- prediction + predict(model$lobagoc_models[[i]], data)
+    for(i in 1:v){
+      prediction <- prediction + predict(object$lobagoc_models[[i]], data)
     }
     
     prediction <- (prediction/v)

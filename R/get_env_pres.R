@@ -1,5 +1,6 @@
 #' @param coords Coordinates (long,lat) to extract values for
-#' @param env Environmental rasterstack in any projection 
+#' @param env Environmental rasterstack in any projection
+#' @importFrom raster extract
 get_env_pres <- function(coords, env) {
 
   #check for bad coords
@@ -17,7 +18,7 @@ coords <- sp::SpatialPoints(coords = coords,
 
 coords <- spTransform(x = coords,CRSobj = env@crs)    
 
-return(test <- list(env = extract(y = coords,x = env),
+return(test <- list(env = raster::extract(y = coords,x = env),
                     occurrence_sp = coords))
 
   

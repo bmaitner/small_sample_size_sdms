@@ -41,7 +41,10 @@
   source("R/dr_ulsif.R")
   source("R/evaluate_range_map.R")
   source("R/get_auc.R")
-  
+  source("R/pnp_gaussian.R")
+  source("R/pnp_lobagoc.R")
+  source("R/pnp_vine.R")
+
   #env <- scale(env)
   all_env <- getValues(env)
   all_env_vals <-na.omit(all_env)
@@ -55,11 +58,13 @@
           }
     )
   
-  occs <- read.csv(occurrence_files[3])#some acacia
-  #occs <- read.csv(occurrence_files[4])#some acaena
+  #occs <- read.csv(occurrence_files[3])#some acacia
+  occs <- read.csv(occurrence_files[4])#some acaena
   
-  pres_env <- na.omit(get_env_pres(coords = occs[c("longitude","latitude")],
-                           env = env))
+  pres_env <- get_env_pres(coords = occs[c("longitude","latitude")],
+                           env = env)
+  
+  pres_env$env <- na.omit(pres_env$env)
   
   bg_env <- get_env_bg(coords = occs[c("longitude","latitude")],
                        env = env,
@@ -69,6 +74,107 @@
 #########  
 
   #Making example plots of how the methods work 
+  gaussian_mod <- pnp_gaussian(data = pres_env$env[,c(2,4),drop=FALSE],
+                      method = "fit")
+
+  kde_mod <- pnp_kde(data = pres_env$env[,c(2,4),drop=FALSE],
+                     method = "fit")
+  
+  bag_mod <- pnp_rangebagging(data = pres_env$env[,c(2,4),drop=FALSE],
+                     method = "fit")
+  
+  lobagoc_mod <- pnp_lobagoc(data = pres_env$env[,c(2,4),drop=FALSE],
+                              method = "fit")
+  
+  vine_mod <- pnp_vine(data = pres_env$env[,c(2,4),drop=FALSE],
+                              method = "fit")
+  sample_data_bivariate <- NULL
+  for(i in seq(from=0,to=40,by=1)){
+    for(j in seq(from = 0,
+                 to = 4000,
+                 by = 100)){
+      
+      sample_data_bivariate <- rbind(sample_data_bivariate,cbind(i,j))
+    }
+    
+  }
+  
+  
+  # 2=0:40
+  # 4=400:4000
+  
+  sample_data <- seq(from = 0, to = 40, by = .1)
+  sample_data <- as.matrix(sample_data)
+  
+  colnames(sample_data) <- colnames(pres_env$env[,2,drop=FALSE])
+  colnames(sample_data_bivariate) <- colnames(pres_env$env[,c(2,4)])
+  
+  gaussian_data <- pnp_gaussian(data = sample_data_bivariate,method = "predict",object = gaussian_mod)
+  kde_data <- pnp_kde(data = sample_data_bivariate,method = "predict",object = kde_mod)
+  bag_data <- pnp_rangebagging(data = sample_data_bivariate,method = "predict",object = bag_mod)
+  lobagoc_data <- pnp_lobagoc(data = sample_data_bivariate,method = "predict",object = lobagoc_mod)
+  vine_data <- pnp_vine(data = sample_data_bivariate,
+                        method = "predict",
+                        object = vine_mod) #fix
+  
+  combined_data <- cbind(sample_data_bivariate,
+                         gaussian_data,
+                         kde_data,
+                         bag_data,
+                         lobagoc_data,
+                         vine_data)
+  colnames(combined_data)[which(colnames(combined_data)=="")] <- "lobagoc"
+  colnames(combined_data) <- gsub(pattern = "_data",
+                                  replacement = "",
+                                  x = colnames(combined_data))
+  
+  combined_data <- as.data.frame(combined_data)
+  combined_data[3:ncol(combined_data)] <- exp(combined_data[3:ncol(combined_data)])
+  
+  #combined_data[3:ncol(combined_data)] <- scale(combined_data[3:ncol(combined_data)])
+  
+  
+  library(tidyverse)
+  
+  combined_data %>%
+    pivot_longer(cols = 3:ncol(combined_data)) %>%
+    mutate(value = exp(value)) -> combined_data
+  
+  library(ggplot2)
+  
+  ggplot(data = combined_data,
+         mapping = aes(x = bio1, y = value, col = name))+
+    geom_point()+
+    geom_line()+
+    facet_wrap(facets = "name",
+               scales = "free",)
+  
+  ggplot(data = combined_data,
+         mapping = aes(x = bio12, y = value, col = name))+
+    geom_point()+
+    geom_line()+
+    facet_wrap(facets = "name",
+               scales = "free",)
+  
+  
+  ggplot(data = combined_data,
+         mapping = aes(x = bio1, y = bio12, col = value))+
+    geom_point()+
+    facet_wrap(facets = "name",
+               scales = "free",)
+  
+  p.list = lapply(sort(unique(combined_data$name)), function(i) {
+    ggplot(data = combined_data[which(combined_data$name==i),],
+           mapping = aes(x = bio1, y = bio12, col = value))+
+      geom_point()+ggtitle(i)
+    
+    
+      })
+  
+  library(gridExtra)
+  do.call(grid.arrange, c(p.list, nrow=3))
+  
+    
   pp1 <- pp_gauss(p = pres_env$env[,1],
            bgrd = bg_env$env)
 

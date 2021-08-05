@@ -6,7 +6,7 @@
 #' @param returns A list containing 1) the background data, 2) the cell indices for which the background was taken
 #' @note If supplying constraint_regions, and polygons in which the occurrences fall are considered fair game for background selection.
 #' This background selection is, however, still limited by the buffer as well.
-#' @importFrom raster intersect
+#' @importFrom raster intersect buffer
 get_env_bg <- function(coords, env, method = "buffer", width = NULL, constraint_regions = NULL) {
   
   #check for bad coords
@@ -48,7 +48,7 @@ get_env_bg <- function(coords, env, method = "buffer", width = NULL, constraint_
   
   #make buffer
   buff <-
-  buffer(x = coords,
+  raster::buffer(x = coords,
          width = width)
   
   
@@ -73,9 +73,10 @@ get_env_bg <- function(coords, env, method = "buffer", width = NULL, constraint_
   #remove any partial NAs from buffer(since we don't want to use them)
   buff_rast <- rasterize(y = env,
                          x = buff)
-  buffer_cells <- which(getValues(buff_rast)==1)
+  buffer_cells <- which(getValues(buff_rast) == 1)
   
-  env <- do.call(rbind,extract(y = buff,x = env))
+  env <- do.call(rbind,
+                 raster::extract(y = buff,x = env))
   
   na_or_not <-
     apply(X = env,
