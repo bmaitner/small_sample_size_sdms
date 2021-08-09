@@ -1,6 +1,7 @@
 #' @param presence_method See fit_plug_and_play
 #' @param background_method See fit_plug_and_play
 #' @param quantile Quantile for thresholding, set at 0.05
+#' @importFrom pROC roc auc
 #' @return List containing information on how well the selected model performs on the disdat datasets
 evaluate_disdat <- function(presence_method,
                             background_method,
@@ -155,38 +156,38 @@ evaluate_disdat <- function(presence_method,
                                                                            rep(0,nrow(background_s))))
         
         
-        training_roc_obj <- roc(response = fold_training_suitability_v_occurrence$occurrence,
+        training_roc_obj <- pROC::roc(response = fold_training_suitability_v_occurrence$occurrence,
                                 predictor = fold_training_suitability_v_occurrence$suitability)
         
         out$training_AUC[fold] <- training_roc_obj$auc
         
         
         
-        out$training_pAUC_specificity[fold] <- auc(roc = training_roc_obj,
+        out$training_pAUC_specificity[fold] <- pROC::auc(roc = training_roc_obj,
                                                 partial.auc = c(.8, 1),
                                                 partial.auc.correct = TRUE,
                                                 partial.auc.focus = "specificity")[[1]]
         
-        out$training_pAUC_sensitivity[fold] <- auc(roc = training_roc_obj,
+        out$training_pAUC_sensitivity[fold] <- pROC::auc(roc = training_roc_obj,
                                                 partial.auc = c(.8, 1),
                                                 partial.auc.correct = TRUE,
                                                 partial.auc.focus = "sensitivity")[[1]]
         
         #Testing data
         
-        testing_roc_obj <- roc(response = fold_testing_suitability_v_occurrence$occurrence,
+        testing_roc_obj <- pROC::roc(response = fold_testing_suitability_v_occurrence$occurrence,
                                predictor = fold_testing_suitability_v_occurrence$suitability)
         
         out$testing_AUC[fold] <- testing_roc_obj$auc
         
         
         
-        out$testing_pAUC_specificity[fold] <- auc(roc = testing_roc_obj,
+        out$testing_pAUC_specificity[fold] <- pROC::auc(roc = testing_roc_obj,
                                                partial.auc = c(.8, 1),
                                                partial.auc.correct = TRUE,
                                                partial.auc.focus = "specificity")[[1]]
         
-        out$testing_pAUC_sensitivity[fold] <- auc(roc = testing_roc_obj,
+        out$testing_pAUC_sensitivity[fold] <- pROC::auc(roc = testing_roc_obj,
                                                partial.auc = c(.8, 1),
                                                partial.auc.correct = TRUE,
                                                partial.auc.focus = "sensitivity")[[1]]
@@ -268,17 +269,17 @@ evaluate_disdat <- function(presence_method,
                    occurrence = c(rep(1,nrow(presence_s)),
                                   rep(0,nrow(background_s))))
       
-      full_roc_obj <- roc(response = full_suitability_v_occurrence$occurrence,
+      full_roc_obj <- pROC::roc(response = full_suitability_v_occurrence$occurrence,
                           predictor = full_suitability_v_occurrence$suitability)
       
       
       
-      out_full$full_pAUC_specificity <- auc(roc = full_roc_obj,
+      out_full$full_pAUC_specificity <- pROC::auc(roc = full_roc_obj,
                                             partial.auc = c(.8, 1),
                                             partial.auc.correct = TRUE,
                                             partial.auc.focus = "specificity")[[1]]
       
-      out_full$full_pAUC_sensitivity <- auc(roc = full_roc_obj,
+      out_full$full_pAUC_sensitivity <- pROC::auc(roc = full_roc_obj,
                                             partial.auc = c(.8, 1),
                                             partial.auc.correct = TRUE,
                                             partial.auc.focus = "sensitivity")[[1]]
@@ -314,15 +315,15 @@ evaluate_disdat <- function(presence_method,
                    occurrence =  data_i$pa$pa[which(data_i$pa$spid == species_s)])
       
       
-      pa_roc_obj <- roc(response = pa_suitability_v_occurrence$occurrence,
+      pa_roc_obj <- pROC::roc(response = pa_suitability_v_occurrence$occurrence,
                         predictor = pa_suitability_v_occurrence$suitability)
       
-      out_full$pa_pAUC_specificity <- auc(roc = pa_roc_obj,
+      out_full$pa_pAUC_specificity <- pROC::auc(roc = pa_roc_obj,
                                           partial.auc = c(.8, 1),
                                           partial.auc.correct = TRUE,
                                           partial.auc.focus = "specificity")[[1]]
       
-      out_full$pa_pAUC_sensitivity <- auc(roc = pa_roc_obj,
+      out_full$pa_pAUC_sensitivity <- pROC::auc(roc = pa_roc_obj,
                                           partial.auc = c(.8, 1),
                                           partial.auc.correct = TRUE,
                                           partial.auc.focus = "sensitivity")[[1]]
