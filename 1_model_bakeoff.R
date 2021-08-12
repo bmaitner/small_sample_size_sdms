@@ -76,6 +76,44 @@ saveRDS(object = fold_model_outputs,
 # ggplots of model stats (facet grid of numerator and denominator)  
   
   
-  
-  
-  
+library(ggplot2)  
+
+
+ggplot(data = full_model_outputs,
+       mapping = aes(x= full_AUC))+
+  geom_histogram()+
+  facet_grid(pres_method ~ bg_method)  
+
+ggplot(data = full_model_outputs,
+       mapping = aes(x= pa_AUC,
+                     fill = bg_method))+
+  geom_histogram(position = "identity",alpha=0.5)+
+  facet_grid(pres_method ~ bg_method)
+
+library(tidyverse)
+full_model_outputs %>%
+  group_by(bg_method) %>%
+  summarise(mean_auc = mean(full_AUC),
+            mean_pa_auc = mean(pa_AUC),
+            mean_pa_pAUC_sensitivity = mean(na.omit(pa_pAUC_sensitivity)),
+            mean_pa_pAUC_specificity = mean(na.omit(pa_pAUC_specificity)))
+
+
+colnames(full_model_outputs)
+
+
+ggplot(data = fold_model_outputs,
+       mapping = aes(x= testing_AUC))+
+  geom_histogram()+
+  facet_grid(pres_method ~ bg_method)
+
+
+unique(fold_model_outputs$pres_method)
+
+
+
+unique(full_model_outputs$pres_method) #issue with presence method, only bagging showing up
+unique(full_model_outputs$bg_method)
+
+
+

@@ -252,11 +252,17 @@ evaluate_disdat <- function(presence_method,
       
       #Fit full model  
       
-      model_full <- 
-        fit_plug_and_play(presence = presence_s[,7:ncol(presence_s)],
-                          background = background_s[,7:ncol(background_s)],
-                          presence_method = presence_method,
-                          background_method = background_method)
+      model_full <- tryCatch(expr =  
+                               fit_plug_and_play(presence = presence_s[,7:ncol(presence_s)],
+                                                 background = background_s[,7:ncol(background_s)],
+                                                 presence_method = presence_method,
+                                                 background_method = background_method),
+                             error = function(e){
+                               return(NULL)
+                               }
+                             )
+      
+      if(!is.null(model_full)){
       
       full_data <- rbind(presence_s[,7:ncol(presence_s)],
                          background_s[,7:ncol(background_s)])
@@ -380,6 +386,7 @@ evaluate_disdat <- function(presence_method,
       out_full$n_pa_absence <- length(which(pa_suitability_v_occurrence$occurrence == 0))
       out_full$n_pa_presence <- length(which(pa_suitability_v_occurrence$occurrence == 1))
       
+      }#End code that is only run if the model was fit      
       
       #Save output
       full_model_stats <- rbind(full_model_stats,
