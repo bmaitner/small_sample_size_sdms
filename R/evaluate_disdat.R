@@ -117,12 +117,24 @@ evaluate_disdat <- function(presence_method,
           next
           }
         
-        model_fold <- 
+        
+        model_fold <- NULL
+        
+        try(model_fold <- 
           fit_plug_and_play(presence = presence_s[which(presence_data$fold!=fold),
                                                   7:ncol(presence_s)],
                             background = background_s[,7:ncol(background_s)],
                             presence_method = presence_method,
-                            background_method = background_method)    
+                            background_method = background_method),silent = T)    
+        
+        #if the fold model couldn't be fit, skip it (NA's will indicate this happened)
+        
+        if(is.null(model_fold)){
+          next
+        }
+        
+        
+        
         
         
         pres_vector <- paste(presence_s$x[which(presence_data$fold!=fold)],

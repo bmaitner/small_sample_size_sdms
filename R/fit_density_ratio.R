@@ -1,5 +1,5 @@
 #' @param presence dataframe of covariates at presence points
-#' @param background Optional. Dataframe of covariates at background points
+#' @param background Dataframe of covariates at background points
 #' @param method Optional. If supplied, both presence and background density estimation will use this method.
 #' @param ... Additional parameters passed to internal functions.
 #' @details Current methods include: "ulsif", "rulsif"

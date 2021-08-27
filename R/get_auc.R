@@ -1,6 +1,6 @@
 #input
   #background suitability vector
-  #presence vs abscence vector
+  #presence vs absence vector
     
 #output
   #AUC
