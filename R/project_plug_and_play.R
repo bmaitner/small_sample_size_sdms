@@ -78,7 +78,7 @@ project_plug_and_play <- function(pnp_model, data) {
   
   
   #If someone made an empty model, return nothing
-  if(pnp_model$f0_method == "none" & pnp_model$f0_method == "none"){
+  if(pnp_model$f1_method == "none" & pnp_model$f0_method == "none"){
     
     return(invisible(NULL))
     

@@ -40,7 +40,11 @@ source("R/stratify_spatial.R")
 
   }}
 
-
+  models_to_evaluate <-
+  rbind(models_to_evaluate,
+        data.frame(presence_method = pnp_components,
+                   background_method = "none"))
+  
 # Iterate through models
   
 full_model_outputs <- NULL
@@ -298,6 +302,104 @@ full_model_outputs %>%
   #filter(bg_method == "kde")%>%
   filter(!is.na(point_category))%>%
   write.csv(file = "outputs/point_class_pa_scores.csv")
+
+##########################################################
+
+#What determines the relative performance of different bg methods???
+
+group_lookup <- NULL
+
+regions <- c("AWT", "CAN", "NSW", "NZ", "SA", "SWI")
+
+for(i in 1:length(regions)){
+  
+data_i <- disdat::disData(region = regions[i])  
+group_lookup <- rbind(group_lookup,
+                      unique(data_i$po[c("spid","group")]))
+rm(data_i)  
+}
+
+#standardize names
+group_lookup$group <-
+gsub(pattern = "ba",
+     replacement = "bats",
+     x = group_lookup$group)
+
+group_lookup$group <-
+  gsub(pattern = "db",
+       replacement = "bird",
+       x = group_lookup$group)
+
+
+group_lookup$group <-
+  gsub(pattern = "nb",
+       replacement = "bird",
+       x = group_lookup$group)
+
+group_lookup$group <-
+  gsub(pattern = "ot",
+       replacement = "tree",
+       x = group_lookup$group)
+
+group_lookup$group <-
+  gsub(pattern = "ou",
+       replacement = "plant",
+       x = group_lookup$group)
+
+group_lookup$group <-
+  gsub(pattern = "rt",
+       replacement = "tree",
+       x = group_lookup$group)
+
+group_lookup$group <-
+  gsub(pattern = "ru",
+       replacement = "plant",
+       x = group_lookup$group)
+
+group_lookup$group <-
+  gsub(pattern = "sr",
+       replacement = "reptile",
+       x = group_lookup$group)
+
+# group_lookup$group <-
+#   gsub(pattern = "tree",
+#        replacement = "plant",
+#        x = group_lookup$group)
+
+length(unique(group_lookup$spid))
+unique(group_lookup$group)
+
+full_model_outputs$species
+
+full_model_outputs <-
+merge(x = full_model_outputs,
+      y= group_lookup,
+      by.x = "species",
+      by.y="spid")
+
+
+full_model_outputs %>%
+  group_by(pres_method,bg_method) %>%
+  mutate(min_threshold = stats::quantile(n_presence,.1,na.rm=T),
+         max_threshold = stats::quantile(n_presence,.9,na.rm=T))%>%
+  mutate(point_category = 
+           case_when(n_presence < min_threshold ~ "low",
+                     n_presence > max_threshold ~ "high",
+                     n_presence >= min_threshold & n_presence <= max_threshold ~ "typical"
+           ))%>%ungroup%>%
+  # mutate(bg_method = fct_relevel(bg_method,"rangebagging","gaussian","kde"),
+  #        pres_method = fct_relevel(pres_method,"rangebagging","gaussian","kde"),
+  #        point_category = fct_relevel(point_category, "low","typical","high")) %>%
+  #filter(point_category != "typical")%>%
+  ggplot( mapping = aes(x= pa_AUC, fill = group))+
+  #ggplot( mapping = aes(x= pa_AUC, fill = pres_method))+
+#  geom_histogram(position = "identity", alpha = 0.5)+
+  geom_density(alpha=0.5)+
+  facet_grid(pres_method ~ bg_method,
+             labeller = labeller(
+               pres_method = function(x){paste("Presence: \n", x)},
+               bg_method = function(x){paste("Background: \n", x)})
+  )
 
 
 ###################################################
