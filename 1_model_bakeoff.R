@@ -21,6 +21,7 @@ source("R/pnp_lobagoc.R")
 source("R/pnp_vine.R")
 source("R/evaluate_disdat.R")
 source("R/stratify_spatial.R")
+source("R/dr_maxnet.R")
 
 
 #Select pnp modules to consider (as both numerator and denominator)
@@ -52,8 +53,8 @@ fold_model_outputs <- NULL
   
   for(i in 1:nrow(models_to_evaluate)){
     
-    print("Note: can speed up code considerably by only fitting the background once per location and method,
-          since each region uses the same background points")
+    # print("Note: can speed up code considerably by only fitting the background once per location and method,
+    #       since each region uses the same background points")
     
     model_i <- 
     evaluate_disdat(presence_method = models_to_evaluate$presence_method[i],
@@ -84,22 +85,72 @@ fold_model_outputs <- NULL
 fold_model_outputs <- readRDS("outputs/bake_off_pnp_fold_model_outputs.RDS")
 full_model_outputs <- readRDS("outputs/bake_off_pnp_full_model_outputs.RDS")
 
+#############################################################################
+
+
+#Density ratio methods
+
+# Iterate through models
+
+dr_full_model_outputs <- NULL
+dr_fold_model_outputs <- NULL
+
+dr_models_to_evaluate <- c("ulsif","rulsif","maxnet")
+
+
+for(i in 1:length(dr_models_to_evaluate)){
+  
+  # print("Note: can speed up code considerably by only fitting the background once per location and method,
+  #       since each region uses the same background points")
+  
+  model_i <- 
+    evaluate_disdat(ratio_method = dr_models_to_evaluate[i])
+  
+  
+  dr_full_model_outputs <- rbind(dr_full_model_outputs,
+                              data.frame(ratio_method = dr_models_to_evaluate[i],
+                                         model_i$full_model_stats))
+  
+  dr_fold_model_outputs <- rbind(dr_fold_model_outputs,
+                              data.frame(ratio_method = dr_models_to_evaluate[i],
+                                         model_i$fold_model_stats))
+  
+  
+}
+
+# save outputs as an RDS object (since it takes so long to re-run)
+
+# saveRDS(object = full_model_outputs,
+#         file = "outputs/bake_off_pnp_full_model_outputs.RDS")
+# 
+# saveRDS(object = fold_model_outputs,
+#         file = "outputs/bake_off_pnp_fold_model_outputs.RDS")
+
+fold_model_outputs <- readRDS("outputs/bake_off_dr_fold_model_outputs.RDS")
+full_model_outputs <- readRDS("outputs/bake_off_dr_full_model_outputs.RDS")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # ggplots of model stats (facet grid of numerator and denominator)  
   
   
 library(ggplot2)  
 
-
-ggplot(data = full_model_outputs,
-       mapping = aes(x= full_AUC, fill = bg_method))+
-  geom_histogram()+
-  facet_grid(pres_method ~ bg_method)  
-
-
 ##################################
 #Plot: pres x bg method PA AUC histograms
-
-colnames(full_model_outputs)
 
 
 full_model_outputs %>%
@@ -111,8 +162,8 @@ full_model_outputs %>%
                      n_presence > max_threshold ~ "high",
                      n_presence >= min_threshold & n_presence <= max_threshold ~ "typical"
                        ))%>%ungroup%>%
-  mutate(bg_method = fct_relevel(bg_method,"rangebagging","gaussian","kde"),
-         pres_method = fct_relevel(pres_method,"rangebagging","gaussian","kde"),
+  mutate(bg_method = fct_relevel(bg_method,"none","rangebagging","gaussian","kde"),
+         pres_method = fct_relevel(pres_method,"none","rangebagging","gaussian","kde"),
          point_category = fct_relevel(point_category, "low","typical","high")) %>%
   #filter(point_category != "typical")%>%
   ggplot( mapping = aes(x= pa_AUC, fill = point_category))+
@@ -147,8 +198,11 @@ full_model_outputs %>%
     linetype=2
   )+
   xlab("presence-absence AUC")
-+
-  theme(legend.position = "none")
+# +
+#   theme(legend.position = "none")
+
+##############################################
+
 
 
 ##############################################
@@ -204,8 +258,8 @@ full_model_outputs %>%
 ###############################################
 
 full_model_outputs %>%
-  mutate(bg_method = fct_relevel(bg_method,"rangebagging","gaussian","kde"),
-         pres_method = fct_relevel(pres_method,"rangebagging","gaussian","kde")) %>%
+  mutate(bg_method = fct_relevel(bg_method,"none","rangebagging","gaussian","kde"),
+         pres_method = fct_relevel(pres_method,"none","rangebagging","gaussian","kde")) %>%
   # mutate(bg_method = paste("Background: ", .data$bg_method, sep = ""),
   #        pres_method = paste("Presence: ", .data$pres_method, sep = "")) %>%
   ggplot( mapping = aes(x= full_AUC, fill = pres_method))+
@@ -276,9 +330,7 @@ colnames(full_model_outputs)
 
 
 summary(lm(data = full_model_outputs,formula = full_AUC ~ pres_method + bg_method + pres_method*bg_method + n_presence))
-full_model_outputs$pres_method
-
-colnames(full_model_outputs)
+summary(lm(data = full_model_outputs,formula = pa_AUC ~ pres_method + bg_method + pres_method*bg_method + n_presence))
 
 ###############################################
 
@@ -302,6 +354,64 @@ full_model_outputs %>%
   #filter(bg_method == "kde")%>%
   filter(!is.na(point_category))%>%
   write.csv(file = "outputs/point_class_pa_scores.csv")
+
+
+#############################################################
+
+#Statistical models
+
+colnames(full_model_outputs)
+
+# This gives a very different set of results, most likely due to overfitting
+# lm_3way <- lm(data = full_model_outputs,formula = full_AUC ~ pres_method + bg_method + pres_method*bg_method + n_presence + pres_method*bg_method*n_presence )
+# lm_2way <- lm(data = full_model_outputs,formula = full_AUC ~ pres_method + bg_method + pres_method*bg_method + n_presence )
+
+
+lm_3way <- lm(data = full_model_outputs,
+              formula = pa_AUC ~ pres_method + bg_method + pres_method*bg_method + n_presence + pres_method*bg_method*n_presence )
+
+lm_2way <- lm(data = full_model_outputs,
+              formula = pa_AUC ~ pres_method + bg_method + pres_method*bg_method + n_presence )
+
+lm_2way_re <- lme4::lmer(data = full_model_outputs,
+                         formula = pa_AUC ~ pres_method + bg_method + pres_method*bg_method + n_presence + (1|species))
+
+lm_3way_re <- lme4::lmer(data = full_model_outputs,
+                         formula = pa_AUC ~ pres_method + bg_method + pres_method*bg_method + pres_method*bg_method*n_presence+n_presence + (1|species))
+
+
+#Compare model fits
+AICcmodavg::aictab(cand.set = list(lm_3way,lm_2way),
+                   modnames = c("lm w 3-way int","lm w int"),
+                   second.ord = F)
+
+AICcmodavg::aictab(cand.set = list(lm_3way_re,lm_2way_re),
+                   modnames = c("re w 3-way int","re w int"),
+                   second.ord = F)
+
+summary(lm_2way)
+summary(lm_3way)
+summary(lm_2way_re)
+summary(lm_3way_re)
+
+AIC(lm_2way)
+AIC(lm_2way_re)
+
+
+lsmeans::lsmeans(lm_3way, pairwise~pres_method*bg_method, adjust="tukey")
+lsmeans::lsmeans(lm_2way, pairwise~pres_method*bg_method, adjust="tukey")
+lsmeans::lsmeans(lm_2way_re, pairwise~pres_method*bg_method, adjust="tukey")
+
+library(nlme)
+test<-lme(fixed = pa_AUC ~ pres_method + bg_method + pres_method*bg_method + pres_method*bg_method*n_presence+n_presence,
+          random = ~ 1|species,
+    data=full_model_outputs, na.action = na.omit)
+summary(test)
+anova(test)
+summary(lm_3way)
+summary(lm_2way)
+summary(lm_2way_re)
+
 
 ##########################################################
 

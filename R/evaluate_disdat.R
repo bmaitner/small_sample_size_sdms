@@ -1,11 +1,31 @@
 #' @param presence_method See fit_plug_and_play
 #' @param background_method See fit_plug_and_play
+#' @param ratio_method see fit_density_ratio.  Only needed if presence and backgruond methods aren't supplied.
 #' @param quantile Quantile for thresholding, set at 0.05
 #' @importFrom pROC roc auc
 #' @return List containing information on how well the selected model performs on the disdat datasets
-evaluate_disdat <- function(presence_method,
-                            background_method,
+evaluate_disdat <- function(presence_method = NULL,
+                            background_method = NULL,
+                            ratio_method = NULL,
                             quantile = 0.05){
+  
+  if(is.null(presence_method) & is.null(background_method) & is.null(ratio_method)){
+    stop("Please supply presence + background methods OR a ratio method")
+   }
+  
+  if(!is.null(presence_method) & !is.null(background_method) & !is.null(ratio_method)){
+    stop("Please ONLY supply presence + background methods OR a ratio method")
+  }
+
+  if(
+    (!is.null(presence_method) & is.null(background_method)) | 
+    (is.null(presence_method) & !is.null(background_method))
+  ){
+    
+  stop("Please supply BOTH presence and background methods.")  
+    
+  }
+    
   
   regions <- c("AWT", "CAN", "NSW", "NZ", "SA", "SWI")
   
@@ -120,21 +140,33 @@ evaluate_disdat <- function(presence_method,
         
         model_fold <- NULL
         
-        try(model_fold <- 
-          fit_plug_and_play(presence = presence_s[which(presence_data$fold!=fold),
-                                                  7:ncol(presence_s)],
-                            background = background_s[,7:ncol(background_s)],
-                            presence_method = presence_method,
-                            background_method = background_method),silent = T)    
+        
+        if(is.null(ratio_method)){
+          
+          try(model_fold <- 
+                fit_plug_and_play(presence = presence_s[which(presence_data$fold!=fold),7:ncol(presence_s)],
+                                  background = background_s[,7:ncol(background_s)],
+                                  presence_method = presence_method,
+                                  background_method = background_method),silent = T)  
+          
+        }else{
+          
+          try(model_fold <- 
+                fit_density_ratio(presence = presence_s[which(presence_data$fold!=fold),7:ncol(presence_s)],
+                                  background = background_s[,7:ncol(background_s)],
+                                  method = ratio_method),
+              silent = T)
+          
+        }
+        
+        
+        
         
         #if the fold model couldn't be fit, skip it (NA's will indicate this happened)
         
         if(is.null(model_fold)){
           next
         }
-        
-        
-        
         
         
         pres_vector <- paste(presence_s$x[which(presence_data$fold!=fold)],
@@ -153,11 +185,27 @@ evaluate_disdat <- function(presence_method,
                                          7:ncol(presence_s)],
                               background_s[,7:ncol(background_s)])
         
-        training_predictions <- project_plug_and_play(pnp_model = model_fold,
-                                                      data = training_data)
         
-        testing_predictions <- project_plug_and_play(pnp_model = model_fold,
-                                                     data = testing_data)
+        if(is.null(ratio_method)){
+          
+          training_predictions <- project_plug_and_play(pnp_model = model_fold,
+                                                        data = training_data)
+          
+          testing_predictions <- project_plug_and_play(pnp_model = model_fold,
+                                                       data = testing_data)
+          
+        }else{
+            
+          training_predictions <- project_density_ratio(dr_model = model_fold,
+                                                        data = training_data)
+          
+          testing_predictions <- project_density_ratio(dr_model = model_fold,
+                                                       data = testing_data)
+          
+          
+          }
+        
+        
         
         fold_training_suitability_v_occurrence <- data.frame(suitability = training_predictions,
                                                              occurrence = c(rep(1,length(which(presence_data$fold!=fold))),
@@ -264,23 +312,69 @@ evaluate_disdat <- function(presence_method,
       
       #Fit full model  
       
-      model_full <- tryCatch(expr =  
-                               fit_plug_and_play(presence = presence_s[,7:ncol(presence_s)],
-                                                 background = background_s[,7:ncol(background_s)],
-                                                 presence_method = presence_method,
-                                                 background_method = background_method),
-                             error = function(e){
-                               return(NULL)
+      if(is.null(ratio_method)){
+        
+        model_full <- tryCatch(expr =  
+                                 fit_plug_and_play(presence = presence_s[,7:ncol(presence_s)],
+                                                   background = background_s[,7:ncol(background_s)],
+                                                   presence_method = presence_method,
+                                                   background_method = background_method),
+                               error = function(e){
+                                 return(NULL)
                                }
-                             )
+        )        
+        
+        
+        
+      }else{
+        
+        
+        model_full <- tryCatch(expr =  
+                                 fit_density_ratio(presence = presence_s[,7:ncol(presence_s)],
+                                                   background = background_s[,7:ncol(background_s)],
+                                                   method = ratio_method),
+                               error = function(e){
+                                 return(NULL)
+                               }
+        )
+        
+        
+        
+        
+        
+      }
+      
+
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
       
       if(!is.null(model_full)){
       
       full_data <- rbind(presence_s[,7:ncol(presence_s)],
                          background_s[,7:ncol(background_s)])
       
-      full_predictions <- project_plug_and_play(pnp_model = model_full,
-                                                data = full_data)
+      
+      if(is.null(ratio_method)){
+        
+        full_predictions <- project_plug_and_play(pnp_model = model_full,
+                                                  data = full_data)  
+        
+      }else{
+        
+        full_predictions <- project_density_ratio(dr_model = model_full,
+                                                  data = full_data)
+        
+      }
+      
+      
       
       full_suitability_v_occurrence <- 
         data.frame(suitability = full_predictions,
@@ -325,8 +419,20 @@ evaluate_disdat <- function(presence_method,
       
 
       #Estimate suitabilities for PA data
-      pa_predictions <- project_plug_and_play(pnp_model = model_full,
-                                              data = pres_abs_data_s[,5:ncol(pres_abs_data_s)])
+      
+      
+      if(is.null(ratio_method)){
+        
+        pa_predictions <- project_plug_and_play(pnp_model = model_full,
+                                                data = pres_abs_data_s[,5:ncol(pres_abs_data_s)])  
+        
+      }else{
+        
+        pa_predictions <- project_density_ratio(dr_model = model_full,
+                                                data = pres_abs_data_s[,5:ncol(pres_abs_data_s)])
+        
+      }
+      
       
       pa_suitability_v_occurrence <- 
         data.frame(suitability = pa_predictions,

@@ -1,8 +1,8 @@
 #' @param presence dataframe of covariates at presence points
 #' @param background Dataframe of covariates at background points
-#' @param method Optional. If supplied, both presence and background density estimation will use this method.
+#' @param method Character. See "notes" for options.
 #' @param ... Additional parameters passed to internal functions.
-#' @details Current methods include: "ulsif", "rulsif"
+#' @details Current methods include: "ulsif", "rulsif", "maxnet"
 #' @export
 #' @return List of class "dr_model" containing model objects and metadata needed for projecting the fitted models.
 fit_density_ratio <- function(presence = NULL,
@@ -12,7 +12,7 @@ fit_density_ratio <- function(presence = NULL,
   #Check data and method
   
   #for now do this manually, but once function skeleton is working do this by looking up available internals
-  current_modules <- c("ulsif","rulsif")
+  current_modules <- c("ulsif","rulsif","maxnet")
   
   if(!method %in% current_modules) {
     stop(paste("Method not implemented. Please select one of: ",
