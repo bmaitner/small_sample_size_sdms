@@ -21,7 +21,6 @@ source("R/pnp_lobagoc.R")
 source("R/pnp_vine.R")
 source("R/evaluate_disdat.R")
 source("R/stratify_spatial.R")
-source("R/dr_maxnet.R")
 
 
 #Select pnp modules to consider (as both numerator and denominator)
@@ -53,8 +52,8 @@ fold_model_outputs <- NULL
   
   for(i in 1:nrow(models_to_evaluate)){
     
-    # print("Note: can speed up code considerably by only fitting the background once per location and method,
-    #       since each region uses the same background points")
+    print("Note: can speed up code considerably by only fitting the background once per location and method,
+          since each region uses the same background points")
     
     model_i <- 
     evaluate_disdat(presence_method = models_to_evaluate$presence_method[i],
@@ -85,69 +84,87 @@ fold_model_outputs <- NULL
 fold_model_outputs <- readRDS("outputs/bake_off_pnp_fold_model_outputs.RDS")
 full_model_outputs <- readRDS("outputs/bake_off_pnp_full_model_outputs.RDS")
 
-#############################################################################
-
-
-#Density ratio methods
-
-# Iterate through models
-
-dr_full_model_outputs <- NULL
-dr_fold_model_outputs <- NULL
+# ggplots of model stats (facet grid of numerator and denominator)  
+  
+  
+library(ggplot2)  
+##################################
 
 dr_models_to_evaluate <- c("ulsif","rulsif","maxnet")
 
+# Iterate through models
+
+full_model_outputs <- NULL
+fold_model_outputs <- NULL
 
 for(i in 1:length(dr_models_to_evaluate)){
   
-  # print("Note: can speed up code considerably by only fitting the background once per location and method,
-  #       since each region uses the same background points")
+  print("Note: can speed up code considerably by only fitting the background once per location and method,
+          since each region uses the same background points")
   
   model_i <- 
     evaluate_disdat(ratio_method = dr_models_to_evaluate[i])
   
   
-  dr_full_model_outputs <- rbind(dr_full_model_outputs,
+  full_model_outputs_dr <- rbind(full_model_outputs_dr,
                               data.frame(ratio_method = dr_models_to_evaluate[i],
                                          model_i$full_model_stats))
   
-  dr_fold_model_outputs <- rbind(dr_fold_model_outputs,
+  fold_model_outputs_dr <- rbind(fold_model_outputs_dr,
                               data.frame(ratio_method = dr_models_to_evaluate[i],
                                          model_i$fold_model_stats))
   
   
 }
 
+
 # save outputs as an RDS object (since it takes so long to re-run)
 
-# saveRDS(object = full_model_outputs,
-#         file = "outputs/bake_off_pnp_full_model_outputs.RDS")
+# saveRDS(object = full_model_outputs_dr,
+#         file = "outputs/bake_off_dr_full_model_outputs.RDS")
 # 
-# saveRDS(object = fold_model_outputs,
-#         file = "outputs/bake_off_pnp_fold_model_outputs.RDS")
-
-fold_model_outputs <- readRDS("outputs/bake_off_dr_fold_model_outputs.RDS")
-full_model_outputs <- readRDS("outputs/bake_off_dr_full_model_outputs.RDS")
+# saveRDS(object = fold_model_outputs_dr,
+#         file = "outputs/bake_off_dr_fold_model_outputs.RDS")
 
 
+fold_model_outputs_dr <- readRDS("outputs/bake_off_dr_fold_model_outputs.RDS")
+full_model_outputs_dr <- readRDS("outputs/bake_off_dr_full_model_outputs.RDS")
+
+##################################
+
+#Combing dr and pnp results
+
+#Make sure colnames match up
+
+fold_model_outputs %>% 
+  mutate(method = paste(pres_method,"/",bg_method),
+         ratio_method = NA) -> fold_model_outputs
+
+full_model_outputs %>% 
+  mutate(method = paste(pres_method,"/",bg_method),
+         ratio_method = NA) -> full_model_outputs
 
 
+fold_model_outputs_dr %>% 
+  mutate(method = ratio_method,
+         pres_method = NA,
+         bg_method = NA) -> fold_model_outputs_dr
+
+full_model_outputs_dr %>% 
+  mutate(method = ratio_method,
+         pres_method = NA,
+         bg_method = NA) -> full_model_outputs_dr
 
 
+#Re-arrange columns and merge
+
+full_model_outputs_dr <- full_model_outputs_dr[colnames(full_model_outputs)]
+fold_model_outputs_dr <- fold_model_outputs_dr[colnames(fold_model_outputs)]
 
 
+fold_model_output_all <- rbind(fold_model_outputs,fold_model_outputs_dr)
+full_model_output_all <- rbind(full_model_outputs,full_model_outputs_dr)
 
-
-
-
-
-
-
-
-# ggplots of model stats (facet grid of numerator and denominator)  
-  
-  
-library(ggplot2)  
 
 ##################################
 #Plot: pres x bg method PA AUC histograms
@@ -169,7 +186,7 @@ full_model_outputs %>%
   ggplot( mapping = aes(x= pa_AUC, fill = point_category))+
   #ggplot( mapping = aes(x= pa_AUC, fill = pres_method))+
   #geom_histogram(position = "identity", alpha = 0.5)+
-  geom_density(alpha=0.5)+
+  geom_density(alpha=0.5)+0
   geom_vline(data = . %>%
       group_by(bg_method,pres_method) %>%
       summarise(line = median(pa_AUC,na.rm=T)),
@@ -200,9 +217,6 @@ full_model_outputs %>%
   xlab("presence-absence AUC")
 # +
 #   theme(legend.position = "none")
-
-##############################################
-
 
 
 ##############################################
@@ -529,6 +543,60 @@ ggplot(mapping = aes(x=training_AUC,
 ?geom_a
 
 fold_model_outputs$testing_AUC
+
+######################################################
+
+colnames(full_model_output_all)
+
+full_model_output_all %>%
+  group_by(method) %>%
+  mutate(min_threshold = stats::quantile(n_presence,.1,na.rm=T),
+         max_threshold = stats::quantile(n_presence,.9,na.rm=T))%>%
+  mutate(point_category = 
+           case_when(n_presence < min_threshold ~ "low",
+                     n_presence > max_threshold ~ "high",
+                     n_presence >= min_threshold & n_presence <= max_threshold ~ "typical"
+           ))%>%ungroup%>%
+  # mutate(bg_method = fct_relevel(bg_method,"rangebagging","gaussian","kde"),
+  #        pres_method = fct_relevel(pres_method,"rangebagging","gaussian","kde"),
+  #        point_category = fct_relevel(point_category, "low","typical","high")) %>%
+  #filter(point_category != "typical")%>%
+  ggplot( mapping = aes(x= pa_AUC,fill=point_category))+
+  #ggplot( mapping = aes(x= pa_AUC, fill = pres_method))+
+  #  geom_histogram(position = "identity", alpha = 0.5)+
+  geom_density(alpha=0.5)+
+  facet_wrap("method")
+  
+
+ggplot(data = full_model_output_all,
+       mapping = aes(x=pa_AUC))+
+  geom_density()+
+  facet_wrap(facets = "method")
+
+
+
+full_model_output_all %>%
+  group_by(method) %>%
+  mutate(min_threshold = stats::quantile(n_presence,.1,na.rm=T),
+         max_threshold = stats::quantile(n_presence,.9,na.rm=T))%>%
+  mutate(point_category = 
+           case_when(n_presence < min_threshold ~ "low",
+                     n_presence > max_threshold ~ "high",
+                     n_presence >= min_threshold & n_presence <= max_threshold ~ "typical"
+           ))%>%
+  group_by(method,point_category) %>%
+  summarise(mean_pa_AUC = mean(pa_AUC),
+            median_pa_AUC = median(pa_AUC),
+            n_nas = length(which(is.na(pa_AUC)))) -> full_model_summary_by_pAUC
+
+write.csv(x = full_model_summary_by_pAUC,
+          file = "outputs/full_model_summary_by_pAUC.csv",
+          row.names = F)
+
+
+
+
+
 
 
 
