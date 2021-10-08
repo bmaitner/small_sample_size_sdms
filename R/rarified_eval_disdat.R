@@ -4,20 +4,24 @@
 
 presences <- unique(full_model_outputs[c("species","n_presence")])
 
-(2:30)^2
+(2:10)^2
 
 stop("Coding still in progress")
 
-model_vector <- unique(full_model_outputs$method)
+model_vector <- unique(full_model_output_all$method)
 
+
+library(disdat)
+library(tidyverse)
+library(pbsdm)
 #' @param presence_vector Vector of presence values to rarify things to.  All species with values greater than or equal to the max value will be included.
 #' @param n_reps Number of replicates for each presence level
 #' @param model_vector A vector of model names.  For presence/background, these should be specified as presence/background.
 #' @param quantile Quantile for thresholding, set at 0.05
-rarified_eval_disdat <- function(presence_vector = (1:30)^2, n_reps = 10, model_vector,quantile = 0.05){
+rarified_eval_disdat <- function(presence_vector = (2:20)^2, n_reps = 3, model_vector,quantile = 0.05, temp_RDS = "outputs/temp_rarified.RDS"){
 
   full_model_stats <- NULL
-  # First, get a list of relevant species  
+  # First, get a list of relevant species
   
         regions <- c("AWT", "CAN", "NSW", "NZ", "SA", "SWI")
         
@@ -247,11 +251,11 @@ rarified_eval_disdat <- function(presence_vector = (1:30)^2, n_reps = 10, model_
                   #For at least one location the PA data seem to be corrupted due to an error converting from wide to long format (the y column shows up as a species)
                   
                   
-                  pres_abs_data_s <- merge(x = data_i$pa[which(data_i$pa$spid == species_s),"siteid",drop=FALSE],
+                  pres_abs_data_s <- merge(x = data_i$pa[which(data_i$pa$spid == species),"siteid",drop=FALSE],
                                            y = data_i$env,
                                            sort = FALSE)
                   
-                  if(!all(pres_abs_data_s$siteid == data_i$pa$siteid[which(data_i$pa$spid == species_s)])){
+                  if(!all(pres_abs_data_s$siteid == data_i$pa$siteid[which(data_i$pa$spid == species)])){
                     stop("Problem with data order in P/A data")
                   }
                   
@@ -274,7 +278,7 @@ rarified_eval_disdat <- function(presence_vector = (1:30)^2, n_reps = 10, model_
                   
                   pa_suitability_v_occurrence <- 
                     data.frame(suitability = pa_predictions,
-                               occurrence =  data_i$pa$pa[which(data_i$pa$spid == species_s)])
+                               occurrence =  data_i$pa$pa[which(data_i$pa$spid == species)])
                   
                   
                   pa_roc_obj <- pROC::roc(response = pa_suitability_v_occurrence$occurrence,
@@ -346,10 +350,11 @@ rarified_eval_disdat <- function(presence_vector = (1:30)^2, n_reps = 10, model_
                 
                 #Save output
                 full_model_stats <- rbind(full_model_stats,
-                                          data.frame(species = species_s, out_full))
+                                          data.frame(species = species,
+                                                     model = model, out_full))
                 
-              
-              
+                saveRDS(object = full_model_stats,file = temp_RDS)
+                
               
               
             } #m loop
