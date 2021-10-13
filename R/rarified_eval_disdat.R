@@ -18,7 +18,11 @@ library(pbsdm)
 #' @param n_reps Number of replicates for each presence level
 #' @param model_vector A vector of model names.  For presence/background, these should be specified as presence/background.
 #' @param quantile Quantile for thresholding, set at 0.05
-rarified_eval_disdat <- function(presence_vector = (2:20)^2, n_reps = 3, model_vector,quantile = 0.05, temp_RDS = "outputs/temp_rarified.RDS"){
+rarified_eval_disdat <- function(presence_vector = (2:20)^2,
+                                 n_reps = 3,
+                                 model_vector,
+                                 quantile = 0.05,
+                                 temp_RDS = "outputs/temp_rarified.RDS"){
 
   full_model_stats <- NULL
   # First, get a list of relevant species
@@ -146,6 +150,11 @@ rarified_eval_disdat <- function(presence_vector = (2:20)^2, n_reps = 3, model_v
                 #Fit full model  
                 
                 if(is.null(dr_method)){
+                  model_full <- NULL
+                  runtime <- NULL
+                  runtime <- proc.time() 
+                  
+                  
                   
                   model_full <- tryCatch(expr =  
                                            fit_plug_and_play(presence = presence_s[,7:ncol(presence_s)],
@@ -153,14 +162,19 @@ rarified_eval_disdat <- function(presence_vector = (2:20)^2, n_reps = 3, model_v
                                                              presence_method = pres_method,
                                                              background_method = bg_method),
                                          error = function(e){
+                                           message("problem fitting")
                                            return(NULL)
                                          }
                   )        
-                  
+                  runtime <- proc.time() - runtime
                   
                   
                 }else{
                   
+                  model_full <- NULL
+                  runtime <- NULL
+                  
+                  runtime <- proc.time() 
                   
                   model_full <- tryCatch(expr =  
                                            fit_density_ratio(presence = presence_s[,7:ncol(presence_s)],
@@ -170,10 +184,7 @@ rarified_eval_disdat <- function(presence_vector = (2:20)^2, n_reps = 3, model_v
                                            return(NULL)
                                          }
                   )
-                  
-                  
-                  
-                  
+                  runtime <- proc.time() - runtime
                   
                 }
                 
@@ -194,8 +205,31 @@ rarified_eval_disdat <- function(presence_vector = (2:20)^2, n_reps = 3, model_v
                                        n_presence = NA,
                                        n_background = NA,
                                        n_pa_presence = NA,
-                                       n_pa_absence = NA)
+                                       n_pa_absence = NA,
+                                       runtime = NA)
                 
+                
+                #If the model failed, just record NAs and metadata
+                
+            
+                if(is.null(model_full)){
+                  
+                  out_full$n_background <- nrow(background_s[,7:ncol(background_s)])
+                  out_full$n_presence <- nrow(presence_s[,7:ncol(presence_s)])
+                  out_full$n_pa_absence <- length(data_i$pa$pa[which(data_i$pa$spid == species & data_i$pa$pa == 0)])
+                  out_full$n_pa_presence <- length(data_i$pa$pa[which(data_i$pa$spid == species & data_i$pa$pa == 1)])
+                  out_full$runtime <- runtime[3]
+                  
+                  
+                  full_model_stats <- rbind(full_model_stats,
+                                            data.frame(species = species,
+                                                       model = model, out_full))
+                  
+                  saveRDS(object = full_model_stats,file = temp_RDS)
+                  
+                 next 
+                  
+                }
                 
                 
                 if(!is.null(model_full)){
@@ -345,6 +379,7 @@ rarified_eval_disdat <- function(presence_vector = (2:20)^2, n_reps = 3, model_v
                   out_full$n_presence <- nrow(presence_s[,7:ncol(presence_s)])
                   out_full$n_pa_absence <- length(which(pa_suitability_v_occurrence$occurrence == 0))
                   out_full$n_pa_presence <- length(which(pa_suitability_v_occurrence$occurrence == 1))
+                  out_full$runtime <- runtime[3]
                   
                 }#End code that is only run if the model was fit      
                 
