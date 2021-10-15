@@ -3,25 +3,9 @@ library(np)
 library(AUC)
 library(rvinecopulib)
 library(pROC)
-source("R/get_env_pres.R")
-source("R/get_env_bg.R")
-source("R/fit_plug_and_play.R")
-source("R/pnp_gaussian.R")
-source("R/pnp_rangebagging.R")
-source("R/pnp_none.R")
-source("R/pnp_kde.R")
-source("R/project_plug_and_play.R")
-source("R/fit_density_ratio.R")
-source("R/project_density_ratio.R")
-source("R/dr_ulsif.R")
-source("R/evaluate_range_map.R")
-source("R/get_auc.R")
-source("R/pnp_gaussian.R")
-source("R/pnp_lobagoc.R")
-source("R/pnp_vine.R")
-source("R/evaluate_disdat.R")
-source("R/stratify_spatial.R")
-
+library(lemon)
+library(pbsdm)
+library(tidyverse)
 
 #Select pnp modules to consider (as both numerator and denominator)
   pnp_components <- c("rangebagging",
@@ -174,25 +158,25 @@ full_model_outputs %>%
   group_by(pres_method,bg_method) %>%
   mutate(min_threshold = stats::quantile(n_presence,.1,na.rm=T),
          max_threshold = stats::quantile(n_presence,.9,na.rm=T))%>%
-  mutate(point_category = 
-           case_when(n_presence < min_threshold ~ "low",
-                     n_presence > max_threshold ~ "high",
-                     n_presence >= min_threshold & n_presence <= max_threshold ~ "typical"
+  mutate(presence_category = 
+           case_when(n_presence < min_threshold ~ "few",
+                     n_presence > max_threshold ~ "many",
+                     n_presence >= min_threshold & n_presence <= max_threshold ~ "intermediate"
                        ))%>%ungroup%>%
   mutate(bg_method = fct_relevel(bg_method,"none","rangebagging","gaussian","kde"),
-         pres_method = fct_relevel(pres_method,"none","rangebagging","gaussian","kde"),
-         point_category = fct_relevel(point_category, "low","typical","high")) %>%
+         pres_method = fct_relevel(pres_method,"rangebagging","gaussian","kde"),
+         presence_category = fct_relevel(presence_category, "few","intermediate","many")) %>%
   #filter(point_category != "typical")%>%
-  ggplot( mapping = aes(x= pa_AUC, fill = point_category))+
+  ggplot( mapping = aes(x= pa_AUC, fill = presence_category))+
   #ggplot( mapping = aes(x= pa_AUC, fill = pres_method))+
   #geom_histogram(position = "identity", alpha = 0.5)+
-  geom_density(alpha=0.5)+0
+  geom_density(alpha=0.5)+
   geom_vline(data = . %>%
       group_by(bg_method,pres_method) %>%
       summarise(line = median(pa_AUC,na.rm=T)),
     mapping = aes(xintercept = line)
   )+
-  facet_grid(pres_method ~ bg_method,
+  facet_rep_grid(pres_method ~ bg_method,repeat.tick.labels = T,
              labeller = labeller(
                pres_method = function(x){paste("Presence: \n", x)},
                bg_method = function(x){paste("Background: \n", x)})
@@ -214,9 +198,119 @@ full_model_outputs %>%
     mapping = aes(xintercept = line),
     linetype=2
   )+
-  xlab("presence-absence AUC")
-# +
-#   theme(legend.position = "none")
+  xlab("Presence-Absence AUC")+
+  labs(fill = "Presence category")+
+  ylab("Density")
+
+
+full_model_outputs_dr %>%
+  group_by(ratio_method) %>%
+  mutate(min_threshold = stats::quantile(n_presence,.1,na.rm=T),
+         max_threshold = stats::quantile(n_presence,.9,na.rm=T))%>%
+  mutate(presence_category = 
+           case_when(n_presence < min_threshold ~ "few",
+                     n_presence > max_threshold ~ "many",
+                     n_presence >= min_threshold & n_presence <= max_threshold ~ "intermediate"
+           ))%>%ungroup%>%
+  mutate(ratio_method = fct_relevel(ratio_method,"ulsif","rulsif","maxnet"),
+         presence_category = fct_relevel(presence_category, "few","intermediate","many")) %>%
+  #filter(point_category != "typical")%>%
+  ggplot( mapping = aes(x= pa_AUC, fill = presence_category))+
+  #ggplot( mapping = aes(x= pa_AUC, fill = pres_method))+
+  #geom_histogram(position = "identity", alpha = 0.5)+
+  geom_density(alpha=0.5)+
+  geom_vline(data = . %>%
+               group_by(ratio_method) %>%
+               summarise(line = median(pa_AUC, na.rm = T)),
+             mapping = aes(xintercept = line)
+  )+
+  facet_rep_wrap("ratio_method",repeat.tick.labels = T)+
+  geom_vline(
+    data = . %>%
+      group_by(ratio_method) %>%
+      summarise(line = quantile(pa_AUC,
+                                probs = .75,na.rm=T)),
+    mapping = aes(xintercept = line),
+    linetype=2
+  )+
+  geom_vline(
+    data = . %>%
+      group_by(ratio_method) %>%
+      summarise(line = quantile(pa_AUC,
+                                probs = .25,na.rm=T)),
+    mapping = aes(xintercept = line),
+    linetype=2
+  )+
+  xlab("Presence-Absence AUC")+
+  labs(fill = "Presence category")+
+  ylab("Density")+xlim(c(0.4,1))
+
+
+
+
+
+
+
+
+
+
+
+
+##############################################  
+  
+#Figure 3 in Wisz et al.
+  
+
+#median auc vs sample size, color = method
+  
+colnames(full_model_output_all)
+  
+full_model_output_all %>%
+  group_by(species) %>%
+  mutate(mn_rel_pa_AUC = pa_AUC-.data$pa_AUC[[which(.data$method == "maxnet")]])%>%
+  #filter(method %in% c("gaussian / gaussian", "maxnet", "gaussian / kde")) %>%  
+ggplot(mapping = aes(x = log10(n_presence),
+                     y = mn_rel_pa_AUC,
+                     color = method)) +
+  geom_point()+geom_smooth()
+  
+full_model_output_all %>%
+  group_by(species) %>%
+  mutate(mn_rel_pa_AUC = pa_AUC-.data$pa_AUC[[which(.data$method=="maxnet")]])%>%
+  filter(bg_method %in% c("rangebagging") | pres_method %in% c("rangebagging") | method %in% c("maxnet")) %>%  
+  filter(n_presence < 50) %>%
+  ggplot(mapping = aes(x = log10(n_presence),
+                       y =pa_AUC,
+                       color = method)) +
+  #geom_point()+
+  geom_smooth(se = F)
+
+
+
+full_model_output_all %>%
+  group_by(species) %>%
+  mutate(mn_rel_pa_AUC = pa_AUC-.data$pa_AUC[[which(.data$method=="maxnet")]])%>%
+  filter(bg_method %in% c("gaussian") | pres_method %in% c("gaussian") | method %in% c("maxnet")) %>%  
+  filter(n_presence < 50) %>%
+    ggplot(mapping = aes(x = log10(n_presence),
+                       y =pa_AUC,
+                       color = method)) +
+  #geom_point()+
+  geom_smooth(se = F)
+
+full_model_output_all %>%
+  group_by(species) %>%
+  mutate(mn_rel_pa_AUC = pa_AUC-.data$pa_AUC[[which(.data$method=="maxnet")]])%>%
+  filter(bg_method %in% c("kde") | pres_method %in% c("kde") | method %in% c("maxnet")) %>%  
+  filter(n_presence < 100) %>%
+  ggplot(mapping = aes(x = log10(n_presence),
+                       y =pa_AUC,
+                       color = method)) +
+  #geom_point()+
+  geom_smooth(se = F)
+
+
+
 
 
 ##############################################
@@ -331,6 +425,24 @@ full_model_outputs %>%
   write.csv(file = "outputs/pa_scores.csv")
 
 
+full_model_output_all %>%
+  group_by(method) %>%
+  summarise(mean_auc = mean(na.omit(full_AUC)),
+            mean_pa_auc = mean(na.omit(pa_AUC)),
+            mean_pa_pAUC_sensitivity = mean(na.omit(pa_pAUC_sensitivity)),
+            mean_pa_pAUC_specificity = mean(na.omit(pa_pAUC_specificity)),
+            mean_pa_prediction_accuracy = mean(na.omit(pa_prediction_accuracy)),
+            mean_pa_sensitivity = mean(na.omit(pa_sensitivity)),
+            mean_pa_specificity = mean(na.omit(pa_specificity)),
+            mean_pa_pAUC_specificity = mean(na.omit(pa_specificity)),
+            mean_pa_correlation = mean(na.omit(pa_correlation)),
+            mean_pa_kappa = mean(na.omit(pa_kappa)),
+            median_pa_auc =median(na.omit(pa_AUC))
+  )%>%
+  write.csv(file = "outputs/pa_scores_dr_and_pnp.csv")
+
+
+
 colnames(full_model_outputs)
 
 # full_model_outputs$pres_method <- factor(full_model_outputs$pres_method,levels = c("rangebagging","gaussian","kde"),ordered = T)
@@ -339,12 +451,129 @@ colnames(full_model_outputs)
 # full_model_outputs$bg_method <- factor(full_model_outputs$bg_method,ordered = F)
 
 
+#####################################################################################
 
-colnames(full_model_outputs)
+# Presence-background model performance
+
+library(lme4)
+library(betareg)
+library(bbmle)
+library(glmmTMB)
+
+full_model_outputs %>%
+  mutate(min_threshold = stats::quantile(n_presence,.1,na.rm=T),
+         max_threshold = stats::quantile(n_presence,.9,na.rm=T))%>%
+  group_by(pres_method,bg_method) %>%
+  mutate(point_category = 
+           case_when(n_presence < min_threshold ~ "low",
+                     n_presence > max_threshold ~ "high",
+                     n_presence >= min_threshold & n_presence <= max_threshold ~ "typical"
+           ))%>%ungroup%>%
+  mutate(bg_method = fct_relevel(bg_method,"none","rangebagging","gaussian","kde"),
+         pres_method = fct_relevel(pres_method,"rangebagging","gaussian","kde"),
+         point_category= fct_relevel(point_category, "low","typical","high"))%>%
+  ungroup() %>%
+  glmmTMB(formula = pa_AUC ~ pres_method + bg_method + pres_method*bg_method +
+                point_category + pres_method*point_category
+              +(1|species),
+              family = list(family = "beta", link = "logit")) -> pb_betareg_out 
+
+#3-way pres x bg x point category not supported
+
+summary(pb_betareg_out)
+summary(pb_betareg_out)$coefficients$cond %>% write.csv(file = "outputs/pb_beta_model_summary.csv",row.names = T)
+
+aov(pb_betareg_out)
+
+#difflsmeans(pb_betareg_out,test.effs="Group")
+#difflsmeans(pnp_lmer, test.effs = "Group", ddf="Kenward-Roger")
+
+# contrasts(pnp_lmer)
+# contrasts(pb_betareg_out)
+
+# glht(model = pnp_lmer, linfct = mcp(group_var = "pres_method"))
+# glht(model = pb_betareg_out, linfct = mcp(group_var = "pres_method"))
+
+library(emmeans)
+?emmeans
+
+emmeans::emmeans(object = pb_betareg_out,specs = "pres_method")
+emmeans::emmeans(object = pb_betareg_out,specs = point_category~ pres_method * bg_method )
 
 
-summary(lm(data = full_model_outputs,formula = full_AUC ~ pres_method + bg_method + pres_method*bg_method + n_presence))
-summary(lm(data = full_model_outputs,formula = pa_AUC ~ pres_method + bg_method + pres_method*bg_method + n_presence))
+glht(emmeans::emmeans(object = pb_betareg_out,specs = "pres_method"))
+
+emmeans::emmip(object = pb_betareg_out, pres_method ~ bg_method,CIs=TRUE)
+emmeans::emmip(object = pb_betareg_out, pres_method * bg_method ~ point_category ,CIs=TRUE,type="response")
+
+emmeans::emmip_ggplot(emms = emmeans::emmip(object = pb_betareg_out, pres_method * bg_method ~ point_category ,CIs=TRUE,type="response",plotit=FALSE),
+                      xlab = "Point Category",lty= c(1,2,3,4))
+
+emmeans::emmip_ggplot(emms = emmeans::emmip(object = pb_betareg_out, pres_method * bg_method ~ point_category ,type="response",plotit=FALSE),
+                      xlab = "Presence Point Category",
+                      linearg = list(linetype=sort(rep(1:12,3)),size=2),
+                      tlab = "Presence method\nBackground Method")+
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"))
+
+
+
+library(multcomp)
+library(lmerTest)
+
+##############################################################
+
+#overall model comparison
+
+full_model_output_all %>%
+  mutate(min_threshold = stats::quantile(n_presence,.1,na.rm=T),
+         max_threshold = stats::quantile(n_presence,.9,na.rm=T))%>%
+  group_by(method) %>%
+  mutate(point_category = 
+           case_when(n_presence < min_threshold ~ "low",
+                     n_presence > max_threshold ~ "high",
+                     n_presence >= min_threshold & n_presence <= max_threshold ~ "typical"
+           ))%>%ungroup%>%
+  mutate(point_category= fct_relevel(point_category, "low","typical","high"))%>%
+  ungroup() %>%
+  glmmTMB(formula = pa_AUC ~ method + point_category + method*point_category
+          +(1|species),
+          family = list(family = "beta", link = "logit")) -> overall_betareg_out
+
+  emmeans::emmip_ggplot(emms = emmeans::emmip(object = overall_betareg_out, method ~ point_category ,type="response",plotit=FALSE),
+                        xlab = "Presence Point Category",
+                        size=2,
+                        tlab = "Method")+
+    theme(axis.text=element_text(size=12),
+          axis.title=element_text(size=14,face="bold"))
+  
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  
+  full_model_output_all %>%
+    mutate(min_threshold = stats::quantile(n_presence,.1,na.rm=T),
+           max_threshold = stats::quantile(n_presence,.9,na.rm=T))%>%
+    group_by(method) %>%
+    mutate(point_category = 
+             case_when(n_presence < min_threshold ~ "low",
+                       n_presence > max_threshold ~ "high",
+                       n_presence >= min_threshold & n_presence <= max_threshold ~ "typical"
+             ))%>%ungroup%>%
+    mutate(point_category= fct_relevel(point_category, "low","typical","high"))%>%
+    ungroup() %>% filter(method %in% c("maxnet", "ulsif", "rulsif", "gaussian / gaussian", "gaussian / kde", "rangebagging / none",
+                                       "kde / kde")) %>%
+    glmmTMB(formula = pa_AUC ~ method + point_category + method*point_category
+            +(1|species),
+            family = list(family = "beta", link = "logit"))-> test
+    
+    
+  emmeans::emmip_ggplot(emms = emmeans::emmip(object=test, method ~ point_category ,type="response",plotit=FALSE,CI=TRUE),
+                        xlab = "Presence Point Category",
+                        size=2,
+                        tlab = "Method")+
+    theme(axis.text=element_text(size=12),
+          axis.title=element_text(size=14,face="bold"))
+  
 
 ###############################################
 
@@ -529,7 +758,7 @@ full_model_outputs %>%
 ###################################################
 
 fold_model_outputs %>%
-  mutate(bg_method = fct_relevel(bg_method,"rangebagging","gaussian","kde"),
+  mutate(bg_method = fct_relevel(bg_method,"none","rangebagging","gaussian","kde"),
          pres_method = fct_relevel(pres_method,"rangebagging","gaussian","kde"))%>%
 ggplot(mapping = aes(x=training_AUC,
                      y=testing_AUC))+
@@ -538,7 +767,9 @@ ggplot(mapping = aes(x=training_AUC,
              labeller = labeller(
                pres_method = function(x){paste("Presence: \n", x)},
                bg_method = function(x){paste("Background: \n", x)})
-  )+geom_abline(slope = 1,color="blue")
+  )+geom_abline(slope = 1,color="blue")+
+  xlab("Training AUC")+
+  ylab("Testing AUC")
 
 ?geom_a
 
@@ -587,14 +818,16 @@ full_model_output_all %>%
   group_by(method,point_category) %>%
   summarise(mean_pa_AUC = mean(pa_AUC),
             median_pa_AUC = median(pa_AUC),
-            n_nas = length(which(is.na(pa_AUC)))) -> full_model_summary_by_pAUC
+            mean_pa_sensitivity = mean(pa_sensitivity),
+            mean_pa_specificity = mean(pa_specificity),
+            n_nas = length(which(is.na(pa_AUC)))) -> full_model_summary_by_pa_AUC
 
-write.csv(x = full_model_summary_by_pAUC,
-          file = "outputs/full_model_summary_by_pAUC.csv",
+write.csv(x = full_model_summary_by_pa_AUC,
+          file = "outputs/full_model_summary_by_pa_AUC.csv",
           row.names = F)
 
 
-
+colnames(full_model_output_all)
 
 
 

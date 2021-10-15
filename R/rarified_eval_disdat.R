@@ -198,6 +198,7 @@ rarified_eval_disdat <- function(presence_vector = (2:20)^2,
                                        pa_pAUC_sensitivity = NA,
                                        pa_DOR = NA,
                                        pa_prediction_accuracy = NA,
+                                       pa_precision = NA,
                                        pa_sensitivity = NA,
                                        pa_specificity = NA,
                                        pa_correlation = NA,
@@ -206,6 +207,10 @@ rarified_eval_disdat <- function(presence_vector = (2:20)^2,
                                        n_background = NA,
                                        n_pa_presence = NA,
                                        n_pa_absence = NA,
+                                       TP = NA,
+                                       TN = NA,
+                                       FP = NA,
+                                       FN = NA,
                                        runtime = NA)
                 
                 
@@ -368,6 +373,7 @@ rarified_eval_disdat <- function(presence_vector = (2:20)^2,
                   out_full$pa_DOR <- (TP*TN)/(FP*FN)
                   #F1 <- 2*((precision * sensitivity)/(precision + sensitivity))
                   out_full$pa_prediction_accuracy <- (TP+TN)/(TP+TN+FP+FN)
+                  out_full$pa_precision <- TP / (TP + FP)
                   
                   P_o <- (TP+TN)/(TP+TN+FP+FN)
                   Ppres <- ((TP+FP)/(TP+TN+FP+FN))*((TP+FN)/(TP+TN+FP+FN))
@@ -379,6 +385,11 @@ rarified_eval_disdat <- function(presence_vector = (2:20)^2,
                   out_full$n_presence <- nrow(presence_s[,7:ncol(presence_s)])
                   out_full$n_pa_absence <- length(which(pa_suitability_v_occurrence$occurrence == 0))
                   out_full$n_pa_presence <- length(which(pa_suitability_v_occurrence$occurrence == 1))
+                  out_full$TP <- TP
+                  out_full$TN <- TN
+                  out_full$FP <- FP
+                  out_full$FN <- FN
+                  
                   out_full$runtime <- runtime[3]
                   
                 }#End code that is only run if the model was fit      
