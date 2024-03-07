@@ -86,12 +86,15 @@ evaluate_disdat <- function(presence_method = NULL,
       
       #stratify presences
       
-      presence_data <- stratify_spatial(occurrence_sp = SpatialPoints(coords = presence_s[c("x","y")],
-                                                                      proj4string = crs(paste("+init=epsg:",epsg,sep = ""))),
-                                        nfolds = NULL,
-                                        nsubclusters = NULL)
-      
+        presence_data <-
+          stratify_spatial(occurrence_sf = st_as_sf(x = presence_s[c("x","y")],
+                                                    coords = c("x","y")) |>
+                             st_set_crs(epsg),
+                           nfolds = NULL,
+                           nsubclusters = NULL)
+
       #Make empty output
+      
       out <- data.frame(fold = 1:length(unique(presence_data$fold)),
                         training_AUC = NA,
                         training_pAUC_specificity = NA,
