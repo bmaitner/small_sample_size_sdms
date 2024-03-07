@@ -6,6 +6,7 @@ library(pROC)
 library(lemon)
 library(pbsdm)
 library(tidyverse)
+source("R/evaluate_disdat.R")
 
 #Select pnp modules to consider (as both numerator and denominator)
   pnp_components <- c("rangebagging",
@@ -149,6 +150,9 @@ fold_model_outputs_dr <- fold_model_outputs_dr[colnames(fold_model_outputs)]
 fold_model_output_all <- rbind(fold_model_outputs,fold_model_outputs_dr)
 full_model_output_all <- rbind(full_model_outputs,full_model_outputs_dr)
 
+
+#saveRDS(object = full_model_output_all,file = "outputs/full_model_output_all.RDS")
+#saveRDS(object = fold_model_output_all,file = "outputs/fold_model_output_all.RDS")
 
 ##################################
 #Plot: pres x bg method PA AUC histograms
@@ -434,7 +438,6 @@ full_model_output_all %>%
             mean_pa_prediction_accuracy = mean(na.omit(pa_prediction_accuracy)),
             mean_pa_sensitivity = mean(na.omit(pa_sensitivity)),
             mean_pa_specificity = mean(na.omit(pa_specificity)),
-            mean_pa_pAUC_specificity = mean(na.omit(pa_specificity)),
             mean_pa_correlation = mean(na.omit(pa_correlation)),
             mean_pa_kappa = mean(na.omit(pa_kappa)),
             median_pa_auc =median(na.omit(pa_AUC))
@@ -498,7 +501,7 @@ library(emmeans)
 ?emmeans
 
 emmeans::emmeans(object = pb_betareg_out,specs = "pres_method")
-emmeans::emmeans(object = pb_betareg_out,specs = point_category~ pres_method * bg_method )
+emmeans::emmeans(object = pb_betareg_out,specs = point_category ~ pres_method * bg_method )
 
 
 glht(emmeans::emmeans(object = pb_betareg_out,specs = "pres_method"))
