@@ -7,7 +7,23 @@
 evaluate_disdat <- function(presence_method = NULL,
                             background_method = NULL,
                             ratio_method = NULL,
-                            quantile = 0.05){
+                            quantile = 0.05,
+                            verbose = TRUE){
+  
+  
+  # little fx used for rescaling
+    rescale_w_objects <- function(data,mean_vector,sd_vector){
+      
+      #?sweep #option
+      out <- sweep(data, 2L,mean_vector , "-") |>
+        sweep(2L,sd_vector , "/")
+      
+      out <- t((t(data) - mean_vector)/sd_vector)
+      
+      return(out)
+      
+    }
+  
   
   if(is.null(presence_method) & is.null(background_method) & is.null(ratio_method)){
     stop("Please supply presence + background methods OR a ratio method")
@@ -34,13 +50,17 @@ evaluate_disdat <- function(presence_method = NULL,
   
   for (i in 1:length(regions)){
     
+    
     region_i <- regions[i]
     data_i <- disData(region = region_i)
-
+    
+    if(verbose){message(paste("Starting region ",i, " of ", length(regions),": ",region_i))}
+    
 
     #Remove categorical predictors  
     
     if(region_i == "CAN"){
+
       data_i$env <- data_i$env[which(!colnames(data_i$env) %in% c("ontveg"))] 
       data_i$bg <- data_i$bg[which(!colnames(data_i$bg) %in% c("ontveg"))]
       data_i$po <- data_i$po[which(!colnames(data_i$po) %in% c("ontveg"))]
@@ -65,14 +85,14 @@ evaluate_disdat <- function(presence_method = NULL,
       data_i$po <- data_i$po[which(!colnames(data_i$po) %in% c("calc","sfroyy"))]
     }
     
-    
     #Get EPSG (way to not standardize...)
-    if(region_i == "AWT"){epsg <- 28355}
-    if(region_i == "CAN"){epsg <- 4008}
-    if(region_i == "NSW"){epsg <- 4326}
-    if(region_i == "NZ"){epsg <- 27200}
-    if(region_i == "SA"){epsg <- 4326}
-    if(region_i == "SWI"){epsg <- 21781}
+    
+      if(region_i == "AWT"){epsg <- 28355}
+      if(region_i == "CAN"){epsg <- 4008}
+      if(region_i == "NSW"){epsg <- 4326}
+      if(region_i == "NZ"){epsg <- 27200}
+      if(region_i == "SA"){epsg <- 4326}
+      if(region_i == "SWI"){epsg <- 21781}
     
     for(s in 1:length(unique(data_i$po$spid))){
       
@@ -80,10 +100,33 @@ evaluate_disdat <- function(presence_method = NULL,
       
       species_s <- unique(data_i$po$spid)[s]
           
+      if(verbose){message(paste("Starting species ",s, " of ",
+                                length(unique(data_i$po$spid)),": ",species_s))
+        }
+      
+      
       group_s <- unique(data_i$po$group[which(data_i$po$spid == species_s)])    
       presence_s <- data_i$po[which(data_i$po$spid == species_s),]
       background_s <- data_i$bg
       
+      # re-scale presence and background.
+      
+        bg_means <- colMeans(background_s[,7:ncol(background_s)])
+        bg_sd <- apply(X = background_s[,7:ncol(background_s)],MARGIN = 2,FUN = sd)
+        
+      
+
+        presence_s[,7:ncol(presence_s)] <-
+        rescale_w_objects(data = presence_s[,7:ncol(presence_s)],
+                          mean_vector = bg_means,
+                          sd_vector = bg_sd)
+        
+        background_s[,7:ncol(presence_s)] <-
+          rescale_w_objects(data = background_s[,7:ncol(presence_s)],
+                            mean_vector = bg_means,
+                            sd_vector = bg_sd)
+
+
       #stratify presences
       
         presence_data <-
@@ -133,6 +176,8 @@ evaluate_disdat <- function(presence_method = NULL,
       
       
       for(fold in 1:length(unique(presence_data$fold))){
+        
+        if(verbose){message(paste("Starting fold ",fold, " of ",length(unique(presence_data$fold))))}
         
         #This if statement skips cross validation if there is only one fold
         if(length(unique(presence_data$fold)) == 1){
@@ -220,11 +265,11 @@ evaluate_disdat <- function(presence_method = NULL,
         
         
         training_roc_obj <- pROC::roc(response = fold_training_suitability_v_occurrence$occurrence,
-                                predictor = fold_training_suitability_v_occurrence$suitability)
+                                predictor = fold_training_suitability_v_occurrence$suitability,
+                                level = c(0,1),
+                                direction = "<")
         
         out$training_AUC[fold] <- training_roc_obj$auc
-        
-        
         
         out$training_pAUC_specificity[fold] <- pROC::auc(roc = training_roc_obj,
                                                 partial.auc = c(.8, 1),
@@ -239,11 +284,11 @@ evaluate_disdat <- function(presence_method = NULL,
         #Testing data
         
         testing_roc_obj <- pROC::roc(response = fold_testing_suitability_v_occurrence$occurrence,
-                               predictor = fold_testing_suitability_v_occurrence$suitability)
+                               predictor = fold_testing_suitability_v_occurrence$suitability,
+                               level = c(0,1),
+                               direction = "<")
         
         out$testing_AUC[fold] <- testing_roc_obj$auc
-        
-        
         
         out$testing_pAUC_specificity[fold] <- pROC::auc(roc = testing_roc_obj,
                                                partial.auc = c(.8, 1),
@@ -385,7 +430,9 @@ evaluate_disdat <- function(presence_method = NULL,
                                   rep(0,nrow(background_s))))
       
       full_roc_obj <- pROC::roc(response = full_suitability_v_occurrence$occurrence,
-                          predictor = full_suitability_v_occurrence$suitability)
+                          predictor = full_suitability_v_occurrence$suitability,
+                          level = c(0,1),
+                          direction = "<")
       
       
       
@@ -416,6 +463,14 @@ evaluate_disdat <- function(presence_method = NULL,
                                y = data_i$env,
                                sort = FALSE)
       
+      # rescale presence abscence data
+      
+      pres_abs_data_s[,5:ncol(pres_abs_data_s)] <-
+        rescale_w_objects(data = pres_abs_data_s[,5:ncol(pres_abs_data_s)],
+                          mean_vector = bg_means,
+                          sd_vector = bg_sd)
+      
+
       if(!all(pres_abs_data_s$siteid == data_i$pa$siteid[which(data_i$pa$spid == species_s)])){
         stop("Problem with data order in P/A data")
       }
@@ -443,7 +498,9 @@ evaluate_disdat <- function(presence_method = NULL,
       
       
       pa_roc_obj <- pROC::roc(response = pa_suitability_v_occurrence$occurrence,
-                        predictor = pa_suitability_v_occurrence$suitability)
+                        predictor = pa_suitability_v_occurrence$suitability,
+                        level = c(0,1),
+                        direction = "<")
       
       out_full$pa_pAUC_specificity <- pROC::auc(roc = pa_roc_obj,
                                           partial.auc = c(.8, 1),
