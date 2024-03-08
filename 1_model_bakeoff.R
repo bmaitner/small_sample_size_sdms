@@ -6,6 +6,7 @@ library(pROC)
 library(lemon)
 library(pbsdm)
 library(tidyverse)
+library(sf)
 source("R/evaluate_disdat.R")
 
 #Select pnp modules to consider (as both numerator and denominator)
@@ -37,12 +38,15 @@ fold_model_outputs <- NULL
   
   for(i in 1:nrow(models_to_evaluate)){
     
-    print("Note: can speed up code considerably by only fitting the background once per location and method,
+    message("Note: can speed up code considerably by only fitting the background once per location and method,
           since each region uses the same background points")
     
     model_i <- 
     evaluate_disdat(presence_method = models_to_evaluate$presence_method[i],
-                    background_method = models_to_evaluate$background_method[i])
+                    background_method = models_to_evaluate$background_method[i],
+                    verbose = TRUE,
+                    ratio_method = NULL,
+                    quantile = 0.05)
     
   
     full_model_outputs <- rbind(full_model_outputs,
