@@ -42,7 +42,11 @@ evaluate_disdat <- function(presence_method = NULL,
     
   }
     
-  
+  if(verbose){message(paste("using presence/numerator method ",
+                            presence_method, " and background/denominator method ",
+                            background_method))}
+    
+    
   regions <- c("AWT", "CAN", "NSW", "NZ", "SA", "SWI")
   
   full_model_stats <- NULL
@@ -154,7 +158,8 @@ evaluate_disdat <- function(presence_method = NULL,
                         n_presence = NA,
                         n_background = NA,
                         n_testing_presence = NA,
-                        n_testing_background = NA)
+                        n_testing_background = NA,
+                        runtime = NA)
       
       out_full <- data.frame(full_AUC = NA,
                              full_pAUC_specificity = NA,
@@ -172,7 +177,8 @@ evaluate_disdat <- function(presence_method = NULL,
                              n_presence = NA,
                              n_background = NA,
                              n_pa_presence = NA,
-                             n_pa_absence = NA)
+                             n_pa_absence = NA,
+                             runtime = NA)
       
       
       for(fold in 1:length(unique(presence_data$fold))){
@@ -191,19 +197,41 @@ evaluate_disdat <- function(presence_method = NULL,
         
         if(is.null(ratio_method)){
           
+          time_start <- Sys.time()              
+          
           try(model_fold <- 
                 fit_plug_and_play(presence = presence_s[which(presence_data$fold!=fold),7:ncol(presence_s)],
                                   background = background_s[,7:ncol(background_s)],
                                   presence_method = presence_method,
-                                  background_method = background_method),silent = T)  
+                                  background_method = background_method),silent = T)
+          
+          time_finish <- Sys.time()
+          
+          model_time <- time_finish - time_start
+          
+          if(units(model_time) != "secs"){stop("Model time units not seconds")}
+          
+          model_time <- as.numeric(model_time)
           
         }else{
+          
+          time_start <- Sys.time()              
+          
           
           try(model_fold <- 
                 fit_density_ratio(presence = presence_s[which(presence_data$fold!=fold),7:ncol(presence_s)],
                                   background = background_s[,7:ncol(background_s)],
                                   method = ratio_method),
               silent = T)
+          
+          time_finish <- Sys.time()
+          
+          model_time <- time_finish - time_start
+          
+          if(units(model_time) != "secs"){stop("Model time units not seconds")}
+          
+          model_time <- as.numeric(model_time)
+          
           
         }
         
@@ -352,6 +380,7 @@ evaluate_disdat <- function(presence_method = NULL,
         out$n_testing_background[fold] <- nrow(background_s[,7:ncol(background_s)])
         out$n_testing_presence[fold]  <- nrow(presence_s[which(presence_data$fold==fold),
                                                    7:ncol(presence_s)])
+        out$runtime <- model_time
         
         
       }#end fold
@@ -362,6 +391,8 @@ evaluate_disdat <- function(presence_method = NULL,
       
       if(is.null(ratio_method)){
         
+        time_start <- Sys.time()              
+        
         model_full <- tryCatch(expr =  
                                  fit_plug_and_play(presence = presence_s[,7:ncol(presence_s)],
                                                    background = background_s[,7:ncol(background_s)],
@@ -370,12 +401,23 @@ evaluate_disdat <- function(presence_method = NULL,
                                error = function(e){
                                  return(NULL)
                                }
-        )        
+        )
+        
+        
+        time_finish <- Sys.time()
+        
+        model_time_full <- time_finish - time_start
+        
+        if(units(model_time_full) != "secs"){stop("Model time full units not seconds")}
+        
+        model_time_full <- as.numeric(model_time_full)
+        
         
         
         
       }else{
         
+        time_start <- Sys.time()              
         
         model_full <- tryCatch(expr =  
                                  fit_density_ratio(presence = presence_s[,7:ncol(presence_s)],
@@ -386,6 +428,14 @@ evaluate_disdat <- function(presence_method = NULL,
                                }
         )
         
+        
+        time_finish <- Sys.time()
+        
+        model_time_full <- time_finish - time_start
+        
+        if(units(model_time_full) != "secs"){stop("Model time full units not seconds")}
+        
+        model_time_full <- as.numeric(model_time_full)
         
         
         
@@ -563,6 +613,7 @@ evaluate_disdat <- function(presence_method = NULL,
       out_full$n_presence <- nrow(presence_s[,7:ncol(presence_s)])
       out_full$n_pa_absence <- length(which(pa_suitability_v_occurrence$occurrence == 0))
       out_full$n_pa_presence <- length(which(pa_suitability_v_occurrence$occurrence == 1))
+      out_full$runtime <- model_time_full
       
       }#End code that is only run if the model was fit      
       

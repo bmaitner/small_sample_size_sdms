@@ -35,11 +35,38 @@ source("R/evaluate_disdat.R")
   
 full_model_outputs <- NULL
 fold_model_outputs <- NULL
+
+# Specify temp file
+
+tempfile_full <- "outputs/temp_bakeoff_output_full.csv"
+tempfile_fold <- "outputs/temp_bakeoff_output_fold.csv"
   
   for(i in 1:nrow(models_to_evaluate)){
     
+    # If the temporary output files exist, check to see what they contain
+    
+      if(file.exists(file.path(tempfile_fold))){
+        fold_model_outpus <- read.csv(file.path(tempfile_fold))
+      }
+    
+      if(file.exists(file.path(tempfile_full))){
+        full_model_outpus <- read.csv(file.path(tempfile_full))
+      }
+    
+    # If model has already been done, move on to next
+    
+      presence_method_i <- models_to_evaluate$presence_method[i]
+      background_method_i <- models_to_evaluate$background_method[i]
+      
+      if( any(fold_model_outputs$pres_method == presence_method_i &
+              fold_model_outputs$bg_method == background_method_i) &
+          any(full_model_outputs$pres_method == presence_method_i &
+              full_model_outputs$bg_method == background_method_i)){next}
+      
     message("Note: can speed up code considerably by only fitting the background once per location and method,
           since each region uses the same background points")
+    
+    set.seed(2005) # The year Transformers: The Movie is set.
     
     model_i <- 
     evaluate_disdat(presence_method = models_to_evaluate$presence_method[i],
@@ -59,6 +86,13 @@ fold_model_outputs <- NULL
                                            bg_method = models_to_evaluate$background_method[i],
                                            model_i$fold_model_stats))
     
+    # Save temporary files
+
+      fold_model_outputs %>%
+        write.csv(file = file.path(tempfile_fold), append = FALSE)
+    
+      full_model_outputs %>%
+        write.csv(file = file.path(tempfile_full), append = FALSE)
     
   }
   

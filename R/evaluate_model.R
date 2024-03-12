@@ -115,14 +115,19 @@ evaluate_model <- function(presences,
       
       
       runtime <- proc.time() - runtime
-# 
-#       model <- fit_plug_and_play(presence = presences,
-#                                  background = background,
-#                                  method = method,
-#                                  presence_method = presence_method,
-#                                  background_method = background_method,
-#                                  bootstrap = bootstrap,
-#                                  bootstrap_reps = bootstrap_reps,bwmethod=bwmethod)
+      
+          #For testing kde
+          cat(model$f1$bwmethod,"/",model$f0$bwmethod,"\n")
+          cat(model$f1$f$bw,"/",model$f0$f$bw,"\n")
+          #end kde testing code
+#     
+      # model <- fit_plug_and_play(presence = presences,
+      #                            background = background,
+      #                            method = method,
+      #                            presence_method = presence_method,
+      #                            background_method = background_method,
+      #                            bootstrap = bootstrap,
+      #                            bootstrap_reps = bootstrap_reps,bwmethod=bwmethod)
       
     }
     
@@ -172,19 +177,21 @@ evaluate_model <- function(presences,
     
     #Training data
     
-    roc_obj <- roc(response =suitability_v_occurrence$occurrence,
+    roc_obj <- pROC::roc(response = suitability_v_occurrence$occurrence,
                             predictor = suitability_v_occurrence$suitability)
+    
+      
     
     out_full$full_AUC <-roc_obj$auc
     
     
     
-    out_full$full_pAUC_specificity <- auc(roc = roc_obj,
+    out_full$full_pAUC_specificity <- pROC::auc(roc = roc_obj,
                                             partial.auc = c(.8, 1),
                                             partial.auc.correct = TRUE,
                                             partial.auc.focus = "specificity")[[1]]
     
-    out_full$full_pAUC_sensitivity <- auc(roc = roc_obj,
+    out_full$full_pAUC_sensitivity <- pROC::auc(roc = roc_obj,
                                             partial.auc = c(.8, 1),
                                             partial.auc.correct = TRUE,
                                             partial.auc.focus = "sensitivity")[[1]]
