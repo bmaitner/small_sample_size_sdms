@@ -46,11 +46,11 @@ tempfile_fold <- "outputs/temp_bakeoff_output_fold.csv"
     # If the temporary output files exist, check to see what they contain
     
       if(file.exists(file.path(tempfile_fold))){
-        fold_model_outpus <- read.csv(file.path(tempfile_fold))
+        fold_model_outputs <- read.csv(file.path(tempfile_fold))
       }
     
       if(file.exists(file.path(tempfile_full))){
-        full_model_outpus <- read.csv(file.path(tempfile_full))
+        full_model_outputs <- read.csv(file.path(tempfile_full))
       }
     
     # If model has already been done, move on to next
@@ -58,14 +58,14 @@ tempfile_fold <- "outputs/temp_bakeoff_output_fold.csv"
       presence_method_i <- models_to_evaluate$presence_method[i]
       background_method_i <- models_to_evaluate$background_method[i]
       
+      message("presence method: ", presence_method_i,
+              "; background method: ",background_method_i)    
+  
       if( any(fold_model_outputs$pres_method == presence_method_i &
               fold_model_outputs$bg_method == background_method_i) &
           any(full_model_outputs$pres_method == presence_method_i &
               full_model_outputs$bg_method == background_method_i)){next}
       
-    message("Note: can speed up code considerably by only fitting the background once per location and method,
-          since each region uses the same background points")
-    
     set.seed(2005) # The year Transformers: The Movie is set.
     
     model_i <- 
