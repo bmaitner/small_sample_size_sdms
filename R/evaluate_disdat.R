@@ -209,6 +209,10 @@ evaluate_disdat <- function(presence_method = NULL,
           
           model_time <- time_finish - time_start
           
+          #convert model time to seconds if needed
+          
+          if(units(model_time) != "secs"){ units(model_time) <- "secs" }
+          
           if(units(model_time) != "secs"){stop("Model time units not seconds")}
           
           model_time <- as.numeric(model_time)
@@ -227,6 +231,10 @@ evaluate_disdat <- function(presence_method = NULL,
           time_finish <- Sys.time()
           
           model_time <- time_finish - time_start
+          
+          #convert model time to seconds if needed
+          
+          if(units(model_time) != "secs"){ units(model_time) <- "secs" }
           
           if(units(model_time) != "secs"){stop("Model time units not seconds")}
           
@@ -408,6 +416,8 @@ evaluate_disdat <- function(presence_method = NULL,
         
         model_time_full <- time_finish - time_start
         
+        if(units(model_time_full) != "secs"){ units(model_time_full) <- "secs" }
+        
         if(units(model_time_full) != "secs"){stop("Model time full units not seconds")}
         
         model_time_full <- as.numeric(model_time_full)
@@ -432,6 +442,8 @@ evaluate_disdat <- function(presence_method = NULL,
         time_finish <- Sys.time()
         
         model_time_full <- time_finish - time_start
+        
+        if(units(model_time_full) != "secs"){ units(model_time_full) <- "secs" }
         
         if(units(model_time_full) != "secs"){stop("Model time full units not seconds")}
         
