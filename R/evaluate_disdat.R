@@ -598,7 +598,7 @@ evaluate_disdat <- function(presence_method = NULL,
       # rescale presence abscence data
       
         pres_abs_data_s[,5:ncol(pres_abs_data_s)] <-
-          rescale_w_objects(data = pres_abs_data_s[,5:ncol(pres_abs_data_s)],
+          pbsdm:::rescale_w_objects(data = pres_abs_data_s[,5:ncol(pres_abs_data_s)],
                             mean_vector = bg_means,
                             sd_vector = bg_sd)
       
