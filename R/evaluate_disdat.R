@@ -10,21 +10,6 @@ evaluate_disdat <- function(presence_method = NULL,
                             quantile = 0.05,
                             verbose = TRUE){
   
-  
-  # little fx used for rescaling
-    rescale_w_objects <- function(data,mean_vector,sd_vector){
-      
-      #?sweep #option
-      out <- sweep(data, 2L,mean_vector , "-") |>
-        sweep(2L,sd_vector , "/")
-      
-      out <- t((t(data) - mean_vector)/sd_vector)
-      
-      return(out)
-      
-    }
-  
-  
   if(is.null(presence_method) & is.null(background_method) & is.null(ratio_method)){
     stop("Please supply presence + background methods OR a ratio method")
    }
@@ -121,12 +106,12 @@ evaluate_disdat <- function(presence_method = NULL,
       
 
         presence_s[,7:ncol(presence_s)] <-
-        rescale_w_objects(data = presence_s[,7:ncol(presence_s)],
+        pbsdm:::rescale_w_objects(data = presence_s[,7:ncol(presence_s)],
                           mean_vector = bg_means,
                           sd_vector = bg_sd)
         
         background_s[,7:ncol(presence_s)] <-
-          rescale_w_objects(data = background_s[,7:ncol(presence_s)],
+          pbsdm:::rescale_w_objects(data = background_s[,7:ncol(presence_s)],
                             mean_vector = bg_means,
                             sd_vector = bg_sd)
 
@@ -159,12 +144,18 @@ evaluate_disdat <- function(presence_method = NULL,
                         n_background = NA,
                         n_testing_presence = NA,
                         n_testing_background = NA,
-                        runtime = NA)
+                        runtime = NA,
+                        entropy = NA)
       
       out_full <- data.frame(full_AUC = NA,
                              full_pAUC_specificity = NA,
                              full_pAUC_sensitivity = NA,
+                             full_DOR = NA,
+                             full_prediction_accuracy = NA,
+                             full_sensitivity = NA,
+                             full_specificity = NA,
                              full_correlation = NA,
+                             full_kappa = NA,
                              pa_AUC = NA,
                              pa_pAUC_specificity = NA,
                              pa_pAUC_sensitivity = NA,
@@ -178,7 +169,8 @@ evaluate_disdat <- function(presence_method = NULL,
                              n_background = NA,
                              n_pa_presence = NA,
                              n_pa_absence = NA,
-                             runtime = NA)
+                             runtime = NA,
+                             entropy = NA)
       
       
       for(fold in 1:length(unique(presence_data$fold))){
@@ -290,6 +282,35 @@ evaluate_disdat <- function(presence_method = NULL,
           }
         
         
+        # Get entropy
+
+        # setup needed files
+          fold_bg <- list()
+          fold_bg[[1]] <- background_s[,7:ncol(background_s)]
+          fold_bg[[2]] <- bg_means
+          fold_bg[[3]] <- bg_sd
+          names(fold_bg) <- c("env","env_mean","env_sd")
+          
+          fold_pres <- list()
+          fold_pres[[1]] <- presence_s[which(presence_data$fold!=fold),7:ncol(presence_s)]
+          names(fold_pres) <- "env"
+
+
+        response_curves <- get_response_curves(env_bg = fold_bg,
+                            env_pres = fold_pres,
+                            pnp_model = model_fold,
+                            n.int = 1000)
+        
+        mean_ent_fold <- 
+        response_curves %>%
+          select(variable,prediction) %>%
+          group_by(variable) %>%
+          summarise(entropy = Entropy(prediction)) %>%
+          ungroup() %>%
+          summarise(mean_ent = mean(entropy))
+        
+        
+        
         
         fold_training_suitability_v_occurrence <- data.frame(suitability = training_predictions,
                                                              occurrence = c(rep(1,length(which(presence_data$fold!=fold))),
@@ -388,8 +409,8 @@ evaluate_disdat <- function(presence_method = NULL,
         out$n_testing_background[fold] <- nrow(background_s[,7:ncol(background_s)])
         out$n_testing_presence[fold]  <- nrow(presence_s[which(presence_data$fold==fold),
                                                    7:ncol(presence_s)])
-        out$runtime <- model_time
-        
+        out$runtime[fold] <- model_time
+        out$entropy[fold] <- mean_ent_fold
         
       }#end fold
       
@@ -453,19 +474,7 @@ evaluate_disdat <- function(presence_method = NULL,
         
         
       }
-      
 
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
       if(!is.null(model_full)){
       
       full_data <- rbind(presence_s[,7:ncol(presence_s)],
@@ -484,6 +493,33 @@ evaluate_disdat <- function(presence_method = NULL,
         
       }
       
+      # Get entropy
+      
+      # setup needed files
+      
+        full_bg <- list()
+        full_bg[[1]] <- background_s[,7:ncol(background_s)]
+        full_bg[[2]] <- bg_means
+        full_bg[[3]] <- bg_sd
+        names(full_bg) <- c("env","env_mean","env_sd")
+      
+        full_pres <- list()
+        full_pres[[1]] <- presence_s[,7:ncol(presence_s)]
+        names(full_pres) <- "env"
+      
+      
+      response_curves_full <- get_response_curves(env_bg = full_bg,
+                                             env_pres = full_pres,
+                                             pnp_model = model_full,
+                                             n.int = 1000)
+      
+      mean_ent_full <- 
+        response_curves_full %>%
+        select(variable,prediction) %>%
+        group_by(variable) %>%
+        summarise(entropy = Entropy(prediction)) %>%
+        ungroup() %>%
+        summarise(mean_ent = mean(entropy))
       
       
       full_suitability_v_occurrence <- 
@@ -516,127 +552,159 @@ evaluate_disdat <- function(presence_method = NULL,
                                        y = full_suitability_v_occurrence$occurrence,
                                        method = "pearson")
       
+      #Evaluate the full model with full model data
       
+        threshold <- stats::quantile(x = full_suitability_v_occurrence$suitability[which(full_suitability_v_occurrence$occurrence==1)],
+                                     probs = quantile,
+                                     na.rm = T)
+      
+        #Anything greater than suitability threshold is considered a presence  
+          
+          TP <- length(which(full_suitability_v_occurrence$suitability >= threshold &
+                               full_suitability_v_occurrence$occurrence == 1))
+          
+          FN <- length(which(full_suitability_v_occurrence$suitability < threshold &
+                               full_suitability_v_occurrence$occurrence == 1))
+          
+          TN <- length(which(full_suitability_v_occurrence$suitability < threshold &
+                               full_suitability_v_occurrence$occurrence == 0))
+          
+          FP <- length(which(full_suitability_v_occurrence$suitability >= threshold &
+                               full_suitability_v_occurrence$occurrence == 0))
+          
+        
+        out_full$full_sensitivity <- TP / (TP + FN)
+        out_full$full_specificity <- TN / (FP + TN)
+        #precision <- TP / (TP + FP)
+        out_full$full_DOR <- (TP*TN)/(FP*FN)
+        #F1 <- 2*((precision * sensitivity)/(precision + sensitivity))
+        out_full$full_prediction_accuracy <- (TP+TN)/(TP+TN+FP+FN)
+        
+        P_o <- (TP+TN)/(TP+TN+FP+FN)
+        Ppres <- ((TP+FP)/(TP+TN+FP+FN))*((TP+FN)/(TP+TN+FP+FN))
+        Pabs <- ((FN+TN)/(TP+TN+FP+FN))*((FP+TN)/(TP+TN+FP+FN))
+        P_e <- Ppres+Pabs
+        out_full$full_kappa <- (P_o - P_e)/(1-P_e)
+      
+
       #Evaluate the full model with independent presence/absence data
       #For at least one location the PA data seem to be corrupted due to an error converting from wide to long format (the y column shows up as a species)
       
       
-      pres_abs_data_s <- merge(x = data_i$pa[which(data_i$pa$spid == species_s),"siteid",drop=FALSE],
-                               y = data_i$env,
-                               sort = FALSE)
+        pres_abs_data_s <- merge(x = data_i$pa[which(data_i$pa$spid == species_s),"siteid",drop=FALSE],
+                                 y = data_i$env,
+                                 sort = FALSE)
       
       # rescale presence abscence data
       
-      pres_abs_data_s[,5:ncol(pres_abs_data_s)] <-
-        rescale_w_objects(data = pres_abs_data_s[,5:ncol(pres_abs_data_s)],
-                          mean_vector = bg_means,
-                          sd_vector = bg_sd)
+        pres_abs_data_s[,5:ncol(pres_abs_data_s)] <-
+          rescale_w_objects(data = pres_abs_data_s[,5:ncol(pres_abs_data_s)],
+                            mean_vector = bg_means,
+                            sd_vector = bg_sd)
       
-
-      if(!all(pres_abs_data_s$siteid == data_i$pa$siteid[which(data_i$pa$spid == species_s)])){
-        stop("Problem with data order in P/A data")
-      }
+  
+        if(!all(pres_abs_data_s$siteid == data_i$pa$siteid[which(data_i$pa$spid == species_s)])){
+          stop("Problem with data order in P/A data")
+        }
       
 
       #Estimate suitabilities for PA data
       
-      
-      if(is.null(ratio_method)){
         
-        pa_predictions <- project_plug_and_play(pnp_model = model_full,
-                                                data = pres_abs_data_s[,5:ncol(pres_abs_data_s)])  
+        if(is.null(ratio_method)){
+          
+          pa_predictions <- project_plug_and_play(pnp_model = model_full,
+                                                  data = pres_abs_data_s[,5:ncol(pres_abs_data_s)])  
+          
+        }else{
+          
+          pa_predictions <- project_density_ratio(dr_model = model_full,
+                                                  data = pres_abs_data_s[,5:ncol(pres_abs_data_s)])
+          
+        }
         
-      }else{
         
-        pa_predictions <- project_density_ratio(dr_model = model_full,
-                                                data = pres_abs_data_s[,5:ncol(pres_abs_data_s)])
+        pa_suitability_v_occurrence <- 
+          data.frame(suitability = pa_predictions,
+                     occurrence =  data_i$pa$pa[which(data_i$pa$spid == species_s)])
         
-      }
-      
-      
-      pa_suitability_v_occurrence <- 
-        data.frame(suitability = pa_predictions,
-                   occurrence =  data_i$pa$pa[which(data_i$pa$spid == species_s)])
-      
-      
-      pa_roc_obj <- pROC::roc(response = pa_suitability_v_occurrence$occurrence,
-                        predictor = pa_suitability_v_occurrence$suitability,
-                        level = c(0,1),
-                        direction = "<")
-      
-      out_full$pa_pAUC_specificity <- pROC::auc(roc = pa_roc_obj,
-                                          partial.auc = c(.8, 1),
-                                          partial.auc.correct = TRUE,
-                                          partial.auc.focus = "specificity")[[1]]
-      
-      out_full$pa_pAUC_sensitivity <- pROC::auc(roc = pa_roc_obj,
-                                          partial.auc = c(.8, 1),
-                                          partial.auc.correct = TRUE,
-                                          partial.auc.focus = "sensitivity")[[1]]
-      
-      out_full$pa_AUC <- pa_roc_obj$auc
-      
-      pa_suitability_v_occurrence <- na.omit(pa_suitability_v_occurrence)
-      
-      out_full$pa_correlation <- cor(x = pa_suitability_v_occurrence$suitability,
-                                     y = pa_suitability_v_occurrence$occurrence,
-                                     method = "pearson")
+        
+        pa_roc_obj <- pROC::roc(response = pa_suitability_v_occurrence$occurrence,
+                          predictor = pa_suitability_v_occurrence$suitability,
+                          level = c(0,1),
+                          direction = "<")
+        
+        out_full$pa_pAUC_specificity <- pROC::auc(roc = pa_roc_obj,
+                                            partial.auc = c(.8, 1),
+                                            partial.auc.correct = TRUE,
+                                            partial.auc.focus = "specificity")[[1]]
+        
+        out_full$pa_pAUC_sensitivity <- pROC::auc(roc = pa_roc_obj,
+                                            partial.auc = c(.8, 1),
+                                            partial.auc.correct = TRUE,
+                                            partial.auc.focus = "sensitivity")[[1]]
+        
+        out_full$pa_AUC <- pa_roc_obj$auc
+        
+        pa_suitability_v_occurrence <- na.omit(pa_suitability_v_occurrence)
+        
+        out_full$pa_correlation <- cor(x = pa_suitability_v_occurrence$suitability,
+                                       y = pa_suitability_v_occurrence$occurrence,
+                                       method = "pearson")
       
       # Code to make testing suitability scores binary
       
       #For this one, we set the threshold based on the full model using presence and background
       
       
-      threshold <- stats::quantile(x = full_suitability_v_occurrence$suitability[which(full_suitability_v_occurrence$occurrence==1)],
-                                   probs = quantile,
-                                   na.rm = T)
+        threshold <- stats::quantile(x = full_suitability_v_occurrence$suitability[which(full_suitability_v_occurrence$occurrence==1)],
+                                     probs = quantile,
+                                     na.rm = T)
       
       #Anything greater than suitability threshold is considered a presence  
       
-      TP <- length(which(pa_suitability_v_occurrence$suitability >= threshold &
-                           pa_suitability_v_occurrence$occurrence == 1))
+        TP <- length(which(pa_suitability_v_occurrence$suitability >= threshold &
+                             pa_suitability_v_occurrence$occurrence == 1))
+        
+        FN <- length(which(pa_suitability_v_occurrence$suitability < threshold &
+                             pa_suitability_v_occurrence$occurrence == 1))
+        
+        TN <- length(which(pa_suitability_v_occurrence$suitability < threshold &
+                             pa_suitability_v_occurrence$occurrence == 0))
+        
+        FP <- length(which(pa_suitability_v_occurrence$suitability >= threshold &
+                             pa_suitability_v_occurrence$occurrence == 0))
       
-      FN <- length(which(pa_suitability_v_occurrence$suitability < threshold &
-                           pa_suitability_v_occurrence$occurrence == 1))
-      
-      TN <- length(which(pa_suitability_v_occurrence$suitability < threshold &
-                           pa_suitability_v_occurrence$occurrence == 0))
-      
-      FP <- length(which(pa_suitability_v_occurrence$suitability >= threshold &
-                           pa_suitability_v_occurrence$occurrence == 0))
-      
-      
-      
-      
-      out_full$pa_sensitivity <- TP / (TP + FN)
-      out_full$pa_specificity <- TN / (FP + TN)
-      #precision <- TP / (TP + FP)
-      out_full$pa_DOR <- (TP*TN)/(FP*FN)
-      #F1 <- 2*((precision * sensitivity)/(precision + sensitivity))
-      out_full$pa_prediction_accuracy <- (TP+TN)/(TP+TN+FP+FN)
-      
-      P_o <- (TP+TN)/(TP+TN+FP+FN)
-      Ppres <- ((TP+FP)/(TP+TN+FP+FN))*((TP+FN)/(TP+TN+FP+FN))
-      Pabs <- ((FN+TN)/(TP+TN+FP+FN))*((FP+TN)/(TP+TN+FP+FN))
-      P_e <- Ppres+Pabs
-      out_full$pa_kappa <- (P_o - P_e)/(1-P_e)
-      
-      out_full$n_background <- nrow(background_s[,7:ncol(background_s)])
-      out_full$n_presence <- nrow(presence_s[,7:ncol(presence_s)])
-      out_full$n_pa_absence <- length(which(pa_suitability_v_occurrence$occurrence == 0))
-      out_full$n_pa_presence <- length(which(pa_suitability_v_occurrence$occurrence == 1))
-      out_full$runtime <- model_time_full
+        out_full$pa_sensitivity <- TP / (TP + FN)
+        out_full$pa_specificity <- TN / (FP + TN)
+        #precision <- TP / (TP + FP)
+        out_full$pa_DOR <- (TP*TN)/(FP*FN)
+        #F1 <- 2*((precision * sensitivity)/(precision + sensitivity))
+        out_full$pa_prediction_accuracy <- (TP+TN)/(TP+TN+FP+FN)
+        
+        P_o <- (TP+TN)/(TP+TN+FP+FN)
+        Ppres <- ((TP+FP)/(TP+TN+FP+FN))*((TP+FN)/(TP+TN+FP+FN))
+        Pabs <- ((FN+TN)/(TP+TN+FP+FN))*((FP+TN)/(TP+TN+FP+FN))
+        P_e <- Ppres+Pabs
+        out_full$pa_kappa <- (P_o - P_e)/(1-P_e)
+        
+        out_full$n_background <- nrow(background_s[,7:ncol(background_s)])
+        out_full$n_presence <- nrow(presence_s[,7:ncol(presence_s)])
+        out_full$n_pa_absence <- length(which(pa_suitability_v_occurrence$occurrence == 0))
+        out_full$n_pa_presence <- length(which(pa_suitability_v_occurrence$occurrence == 1))
+        out_full$runtime <- model_time_full
+        out_full$entropy <- mean_ent_full
       
       }#End code that is only run if the model was fit      
       
       #Save output
-      full_model_stats <- rbind(full_model_stats,
-                                data.frame(species = species_s, out_full))
-      fold_model_stats <- rbind(fold_model_stats,
-                                data.frame(species = species_s, out))
       
+        full_model_stats <- rbind(full_model_stats,
+                                  data.frame(species = species_s, out_full))
+        fold_model_stats <- rbind(fold_model_stats,
+                                  data.frame(species = species_s, out))
       
-      
+
     }#s loop
     
     

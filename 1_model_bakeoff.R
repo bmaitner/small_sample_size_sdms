@@ -7,6 +7,7 @@ library(lemon)
 library(pbsdm)
 library(tidyverse)
 library(sf)
+library(DescTools)
 source("R/evaluate_disdat.R")
 
 #Select pnp modules to consider (as both numerator and denominator)
@@ -75,7 +76,6 @@ tempfile_fold <- "outputs/temp_bakeoff_output_fold.csv"
                     ratio_method = NULL,
                     quantile = 0.05)
     
-  
     full_model_outputs <- rbind(full_model_outputs,
                                 data.frame(pres_method = models_to_evaluate$presence_method[i],
                                            bg_method = models_to_evaluate$background_method[i],
