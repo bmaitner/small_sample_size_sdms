@@ -39,19 +39,19 @@ fold_model_outputs <- NULL
 
 # Specify temp file
 
-tempfile_full <- "outputs/temp_bakeoff_output_full.csv"
-tempfile_fold <- "outputs/temp_bakeoff_output_fold.csv"
+tempfile_full <- "outputs/temp_bakeoff_output_full.rds"
+tempfile_fold <- "outputs/temp_bakeoff_output_fold.rds"
   
   for(i in 1:nrow(models_to_evaluate)){
     
     # If the temporary output files exist, check to see what they contain
     
       if(file.exists(file.path(tempfile_fold))){
-        fold_model_outputs <- read.csv(file.path(tempfile_fold))
+        fold_model_outputs <- readRDS(file.path(tempfile_fold))
       }
     
       if(file.exists(file.path(tempfile_full))){
-        full_model_outputs <- read.csv(file.path(tempfile_full))
+        full_model_outputs <- readRDS(file.path(tempfile_full))
       }
     
     # If model has already been done, move on to next
@@ -89,11 +89,10 @@ tempfile_fold <- "outputs/temp_bakeoff_output_fold.csv"
     # Save temporary files
 
       fold_model_outputs %>%
-        write.csv(file = file.path(tempfile_fold), append = FALSE)
+        saveRDS(file = file.path(tempfile_fold))
     
       full_model_outputs %>%
-        write.csv(file = file.path(tempfile_full), append = FALSE)
-    
+        saveRDS(file.path(tempfile_full))
   }
   
 # save outputs as an RDS object (since it takes so long to re-run)
