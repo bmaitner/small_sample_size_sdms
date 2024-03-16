@@ -309,7 +309,7 @@ evaluate_disdat <- function(presence_method = NULL,
           ungroup() %>%
           summarise(mean_ent = mean(entropy))
         
-        
+        class(mean_ent_fold)
         
         
         fold_training_suitability_v_occurrence <- data.frame(suitability = training_predictions,
@@ -410,7 +410,7 @@ evaluate_disdat <- function(presence_method = NULL,
         out$n_testing_presence[fold]  <- nrow(presence_s[which(presence_data$fold==fold),
                                                    7:ncol(presence_s)])
         out$runtime[fold] <- model_time
-        out$entropy[fold] <- mean_ent_fold
+        out$entropy[fold] <- mean_ent_fold$mean_ent
         
       }#end fold
       
@@ -693,7 +693,7 @@ evaluate_disdat <- function(presence_method = NULL,
         out_full$n_pa_absence <- length(which(pa_suitability_v_occurrence$occurrence == 0))
         out_full$n_pa_presence <- length(which(pa_suitability_v_occurrence$occurrence == 1))
         out_full$runtime <- model_time_full
-        out_full$entropy <- mean_ent_full
+        out_full$entropy <- mean_ent_full$mean_ent
       
       }#End code that is only run if the model was fit      
       
