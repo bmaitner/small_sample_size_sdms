@@ -4,7 +4,7 @@
 
 presences <- unique(full_model_outputs[c("species","n_presence")])
 
-(2:10)^2
+(1:10)^2
 
 stop("Coding still in progress")
 
@@ -14,6 +14,7 @@ model_vector <- unique(full_model_output_all$method)
 library(disdat)
 library(tidyverse)
 library(pbsdm)
+library(sf)
 #' @param presence_vector Vector of presence values to rarify things to.  All species with values greater than or equal to the max value will be included.
 #' @param n_reps Number of replicates for each presence level
 #' @param model_vector A vector of model names.  For presence/background, these should be specified as presence/background.
@@ -109,6 +110,18 @@ rarified_eval_disdat <- function(presence_vector = (2:20)^2,
             group_s <- unique(data_i$po$group[which(data_i$po$spid == species)])    
             #presence_s <- data_i$po[which(data_i$po$spid == species),]
             background_s <- data_i$bg
+            
+            # standardize background
+            
+              bg_means <- colMeans(background_s[,7:ncol(background_s)])
+              bg_sd <- apply(X = background_s[,7:ncol(background_s)],MARGIN = 2,FUN = sd)
+            
+              background_s[,7:ncol(background_s)] <-
+                pbsdm:::rescale_w_objects(data = background_s[,7:ncol(background_s)],
+                                          mean_vector = bg_means,
+                                          sd_vector = bg_sd)
+              
+            
 
         for(p in presence_vector){
           for(n in 1:n_reps){
@@ -116,12 +129,25 @@ rarified_eval_disdat <- function(presence_vector = (2:20)^2,
             presence_s <- data_i$po[which(data_i$po$spid == species),]
             presence_s <- presence_s[sample(x = nrow(presence_s), size = p, replace = F),]
             
+              # rescale presences
+            
+            presence_s[,7:ncol(presence_s)] <-
+              pbsdm:::rescale_w_objects(data = presence_s[,7:ncol(presence_s)],
+                                        mean_vector = bg_means,
+                                        sd_vector = bg_sd)
+            
+              # divide into folds
+            
+            presence_data <-
+              stratify_spatial(occurrence_sf = st_as_sf(x = presence_s[c("x","y")],
+                                                        coords = c("x","y")) |>
+                                 st_set_crs(epsg),
+                               nfolds = NULL,
+                               nsubclusters = NULL)
+            
             
             for(m in 1:length(unique(model_vector))){
-  
-              
-              
-              
+
               replicate <- n
               model <- unique(model_vector)[m]
             
@@ -145,9 +171,277 @@ rarified_eval_disdat <- function(presence_vector = (2:20)^2,
                 }
               
               
-                #Fit the model
+            # Fit the models
                 
-                #Fit full model  
+              # Fit fold models
+              
+                
+                #Make empty output
+                
+                out <- data.frame(fold = 1:length(unique(presence_data$fold)),
+                                  training_AUC = NA,
+                                  training_pAUC_specificity = NA,
+                                  training_pAUC_sensitivity = NA,
+                                  testing_AUC = NA,
+                                  testing_pAUC_specificity = NA,
+                                  testing_pAUC_sensitivity = NA,
+                                  testing_DOR = NA,
+                                  testing_prediction_accuracy = NA,
+                                  testing_sensitivity = NA,
+                                  testing_specificity = NA,
+                                  testing_correlation = NA,
+                                  testing_kappa = NA,
+                                  n_presence = NA,
+                                  n_background = NA,
+                                  n_testing_presence = NA,
+                                  n_testing_background = NA,
+                                  runtime = NA,
+                                  entropy = NA)
+                
+                for(fold in 1:length(unique(presence_data$fold))){
+                  
+                  if(verbose){message(paste("Starting fold ",fold, " of ",length(unique(presence_data$fold))))}
+                  
+                  #This if statement skips cross validation if there is only one fold
+                  if(length(unique(presence_data$fold)) == 1){
+                    print("Skipping cross validation, only one fold")
+                    next
+                  }
+                  
+                  
+                  model_fold <- NULL
+                  
+                  
+                  if(is.null(ratio_method)){
+                    
+                    time_start <- Sys.time()              
+                    
+                    try(model_fold <- 
+                          fit_plug_and_play(presence = presence_s[which(presence_data$fold!=fold),7:ncol(presence_s)],
+                                            background = background_s[,7:ncol(background_s)],
+                                            presence_method = presence_method,
+                                            background_method = background_method),silent = T)
+                    
+                    time_finish <- Sys.time()
+                    
+                    model_time <- time_finish - time_start
+                    
+                    #convert model time to seconds if needed
+                    
+                    if(units(model_time) != "secs"){ units(model_time) <- "secs" }
+                    
+                    if(units(model_time) != "secs"){stop("Model time units not seconds")}
+                    
+                    model_time <- as.numeric(model_time)
+                    
+                  }else{
+                    
+                    time_start <- Sys.time()              
+                    
+                    
+                    try(model_fold <- 
+                          fit_density_ratio(presence = presence_s[which(presence_data$fold!=fold),7:ncol(presence_s)],
+                                            background = background_s[,7:ncol(background_s)],
+                                            method = ratio_method),
+                        silent = T)
+                    
+                    time_finish <- Sys.time()
+                    
+                    model_time <- time_finish - time_start
+                    
+                    #convert model time to seconds if needed
+                    
+                    if(units(model_time) != "secs"){ units(model_time) <- "secs" }
+                    
+                    if(units(model_time) != "secs"){stop("Model time units not seconds")}
+                    
+                    model_time <- as.numeric(model_time)
+                    
+                    
+                  }
+                  
+                  
+                  
+                  
+                  #if the fold model couldn't be fit, skip it (NA's will indicate this happened)
+                  
+                  if(is.null(model_fold)){
+                    next
+                  }
+                  
+                  
+                  pres_vector <- paste(presence_s$x[which(presence_data$fold!=fold)],
+                                       presence_s$y[which(presence_data$fold!=fold)])
+                  
+                  bg_vector <- paste(background_s$x,
+                                     background_s$y) 
+                  
+                  if(any(pres_vector %in% bg_vector)){stop("write more code")}
+                  
+                  training_data <- rbind(presence_s[which(presence_data$fold!=fold),
+                                                    7:ncol(presence_s)],
+                                         background_s[,7:ncol(background_s)])
+                  
+                  testing_data <- rbind(presence_s[which(presence_data$fold==fold),
+                                                   7:ncol(presence_s)],
+                                        background_s[,7:ncol(background_s)])
+                  
+                  
+                  if(is.null(ratio_method)){
+                    
+                    training_predictions <- project_plug_and_play(pnp_model = model_fold,
+                                                                  data = training_data)
+                    
+                    testing_predictions <- project_plug_and_play(pnp_model = model_fold,
+                                                                 data = testing_data)
+                    
+                  }else{
+                    
+                    training_predictions <- project_density_ratio(dr_model = model_fold,
+                                                                  data = training_data)
+                    
+                    testing_predictions <- project_density_ratio(dr_model = model_fold,
+                                                                 data = testing_data)
+                    
+                    
+                  }
+                  
+                  
+                  # Get entropy
+                  
+                  # setup needed files
+                  fold_bg <- list()
+                  fold_bg[[1]] <- background_s[,7:ncol(background_s)]
+                  fold_bg[[2]] <- bg_means
+                  fold_bg[[3]] <- bg_sd
+                  names(fold_bg) <- c("env","env_mean","env_sd")
+                  
+                  fold_pres <- list()
+                  fold_pres[[1]] <- presence_s[which(presence_data$fold!=fold),7:ncol(presence_s)]
+                  names(fold_pres) <- "env"
+                  
+                  
+                  response_curves <- get_response_curves(env_bg = fold_bg,
+                                                         env_pres = fold_pres,
+                                                         pnp_model = model_fold,
+                                                         n.int = 1000)
+                  
+                  mean_ent_fold <- 
+                    response_curves %>%
+                    select(variable,prediction) %>%
+                    group_by(variable) %>%
+                    summarise(entropy = Entropy(prediction)) %>%
+                    ungroup() %>%
+                    summarise(mean_ent = mean(entropy))
+                  
+                  class(mean_ent_fold)
+                  
+                  
+                  fold_training_suitability_v_occurrence <- data.frame(suitability = training_predictions,
+                                                                       occurrence = c(rep(1,length(which(presence_data$fold!=fold))),
+                                                                                      rep(0,nrow(background_s))))
+                  
+                  fold_testing_suitability_v_occurrence <- data.frame(suitability = testing_predictions,
+                                                                      occurrence = c(rep(1,length(which(presence_data$fold==fold))),
+                                                                                     rep(0,nrow(background_s))))
+                  
+                  
+                  training_roc_obj <- pROC::roc(response = fold_training_suitability_v_occurrence$occurrence,
+                                                predictor = fold_training_suitability_v_occurrence$suitability,
+                                                level = c(0,1),
+                                                direction = "<")
+                  
+                  out$training_AUC[fold] <- training_roc_obj$auc
+                  
+                  out$training_pAUC_specificity[fold] <- pROC::auc(roc = training_roc_obj,
+                                                                   partial.auc = c(.8, 1),
+                                                                   partial.auc.correct = TRUE,
+                                                                   partial.auc.focus = "specificity")[[1]]
+                  
+                  out$training_pAUC_sensitivity[fold] <- pROC::auc(roc = training_roc_obj,
+                                                                   partial.auc = c(.8, 1),
+                                                                   partial.auc.correct = TRUE,
+                                                                   partial.auc.focus = "sensitivity")[[1]]
+                  
+                  #Testing data
+                  
+                  testing_roc_obj <- pROC::roc(response = fold_testing_suitability_v_occurrence$occurrence,
+                                               predictor = fold_testing_suitability_v_occurrence$suitability,
+                                               level = c(0,1),
+                                               direction = "<")
+                  
+                  out$testing_AUC[fold] <- testing_roc_obj$auc
+                  
+                  out$testing_pAUC_specificity[fold] <- pROC::auc(roc = testing_roc_obj,
+                                                                  partial.auc = c(.8, 1),
+                                                                  partial.auc.correct = TRUE,
+                                                                  partial.auc.focus = "specificity")[[1]]
+                  
+                  out$testing_pAUC_sensitivity[fold] <- pROC::auc(roc = testing_roc_obj,
+                                                                  partial.auc = c(.8, 1),
+                                                                  partial.auc.correct = TRUE,
+                                                                  partial.auc.focus = "sensitivity")[[1]]
+                  
+                  
+                  # Code to make testing suitability scores binary
+                  
+                  threshold <- stats::quantile(x = fold_testing_suitability_v_occurrence$suitability[which(fold_testing_suitability_v_occurrence$occurrence==1)],
+                                               probs = quantile,
+                                               na.rm = T)
+                  
+                  #Anything greater than suitability threshold is considered a presence  
+                  
+                  TP <- length(which(fold_testing_suitability_v_occurrence$suitability >= threshold &
+                                       fold_testing_suitability_v_occurrence$occurrence == 1))
+                  
+                  FN <- length(which(fold_testing_suitability_v_occurrence$suitability < threshold &
+                                       fold_testing_suitability_v_occurrence$occurrence == 1))
+                  
+                  TN <- length(which(fold_testing_suitability_v_occurrence$suitability < threshold &
+                                       fold_testing_suitability_v_occurrence$occurrence == 0))
+                  
+                  FP <- length(which(fold_testing_suitability_v_occurrence$suitability >= threshold &
+                                       fold_testing_suitability_v_occurrence$occurrence == 0))
+                  
+                  
+                  
+                  
+                  sensitivity <- TP / (TP + FN)
+                  specificity <- TN / (FP + TN)
+                  #precision <- TP / (TP + FP)
+                  DOR <- (TP*TN)/(FP*FN)
+                  #F1 <- 2*((precision * sensitivity)/(precision + sensitivity))
+                  prediction_accuracy <- (TP+TN)/(TP+TN+FP+FN)
+                  P_o <- (TP+TN)/(TP+TN+FP+FN)
+                  Ppres <- ((TP+FP)/(TP+TN+FP+FN))*((TP+FN)/(TP+TN+FP+FN))
+                  Pabs <- ((FN+TN)/(TP+TN+FP+FN))*((FP+TN)/(TP+TN+FP+FN))
+                  P_e <- Ppres+Pabs
+                  kappa <- (P_o - P_e)/(1-P_e)
+                  
+                  
+                  out$testing_DOR[fold] <- DOR
+                  out$testing_prediction_accuracy[fold] <- prediction_accuracy
+                  out$testing_sensitivity[fold] <- sensitivity
+                  out$testing_specificity[fold] <- specificity
+                  out$testing_kappa[fold] <- kappa
+                  
+                  fold_testing_suitability_v_occurrence <- na.omit(fold_testing_suitability_v_occurrence)
+                  out$testing_correlation[fold] <- cor(fold_testing_suitability_v_occurrence$suitability,fold_testing_suitability_v_occurrence$occurrence)
+                  
+                  out$n_background[fold] <- nrow(background_s[,7:ncol(background_s)])
+                  out$n_presence[fold] <- nrow(presence_s[which(presence_data$fold!=fold),
+                                                          7:ncol(presence_s)])
+                  out$n_testing_background[fold] <- nrow(background_s[,7:ncol(background_s)])
+                  out$n_testing_presence[fold]  <- nrow(presence_s[which(presence_data$fold==fold),
+                                                                   7:ncol(presence_s)])
+                  out$runtime[fold] <- model_time
+                  out$entropy[fold] <- mean_ent_fold$mean_ent
+                  
+                }#end fold
+                
+                
+                  
+              # Fit full model  
                 
                 if(is.null(dr_method)){
                   model_full <- NULL
