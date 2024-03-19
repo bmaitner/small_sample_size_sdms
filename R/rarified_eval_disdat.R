@@ -11,6 +11,7 @@ stop("Coding still in progress")
 model_vector <- unique(full_model_output_all$method)
 
 
+
 library(disdat)
 library(tidyverse)
 library(pbsdm)
@@ -23,9 +24,34 @@ rarified_eval_disdat <- function(presence_vector = (2:20)^2,
                                  n_reps = 3,
                                  model_vector,
                                  quantile = 0.05,
-                                 temp_RDS = "outputs/temp_rarified.RDS"){
+                                 temp_full_RDS = "outputs/temp_rarified_full.RDS",
+                                 temp_fold_RDS = "outputs/temp_rarified_fold.RDS"){
 
-  full_model_stats <- NULL
+  
+  # Load files if they exist
+    if(file.exists(temp_fold_RDS)){
+      
+      fold_model_stats <- readRDS(file = temp_fold_RDS)
+      
+      stop("write code to skip things that are done")
+      
+    }else{
+      
+      fold_model_stats <- NULL
+      
+    }
+  
+    if(file.exists(temp_full_RDS)){
+      
+      full_model_stats <- readRDS(file = temp_full_RDS)
+      
+    }else{
+      
+      full_model_stats <- NULL
+    }
+  
+  
+
   # First, get a list of relevant species
   
         regions <- c("AWT", "CAN", "NSW", "NZ", "SA", "SWI")
@@ -505,7 +531,8 @@ rarified_eval_disdat <- function(presence_vector = (2:20)^2,
                                        TN = NA,
                                        FP = NA,
                                        FN = NA,
-                                       runtime = NA)
+                                       runtime = NA,
+                                       entropy = NA)
                 
                 
                 #If the model failed, just record NAs and metadata
@@ -549,6 +576,35 @@ rarified_eval_disdat <- function(presence_vector = (2:20)^2,
                     
                   }
                   
+                  # Get entropy
+                  
+                  # setup needed files
+                  
+                  full_bg <- list()
+                  full_bg[[1]] <- background_s[,7:ncol(background_s)]
+                  full_bg[[2]] <- bg_means
+                  full_bg[[3]] <- bg_sd
+                  names(full_bg) <- c("env","env_mean","env_sd")
+                  
+                  full_pres <- list()
+                  full_pres[[1]] <- presence_s[,7:ncol(presence_s)]
+                  names(full_pres) <- "env"
+                  
+                  
+                  response_curves_full <- get_response_curves(env_bg = full_bg,
+                                                              env_pres = full_pres,
+                                                              pnp_model = model_full,
+                                                              n.int = 1000)
+                  
+                  mean_ent_full <- 
+                    response_curves_full %>%
+                    select(variable,prediction) %>%
+                    group_by(variable) %>%
+                    summarise(entropy = Entropy(prediction)) %>%
+                    ungroup() %>%
+                    summarise(mean_ent = mean(entropy))
+                  
+                  
                   
                   
                   full_suitability_v_occurrence <- 
@@ -588,11 +644,19 @@ rarified_eval_disdat <- function(presence_vector = (2:20)^2,
                                            y = data_i$env,
                                            sort = FALSE)
                   
-                  if(!all(pres_abs_data_s$siteid == data_i$pa$siteid[which(data_i$pa$spid == species)])){
+                  # rescale presence abscence data
+                  
+                  pres_abs_data_s[,5:ncol(pres_abs_data_s)] <-
+                    pbsdm:::rescale_w_objects(data = pres_abs_data_s[,5:ncol(pres_abs_data_s)],
+                                              mean_vector = bg_means,
+                                              sd_vector = bg_sd)
+                  
+                  
+                  if(!all(pres_abs_data_s$siteid == data_i$pa$siteid[which(data_i$pa$spid == species_s)])){
                     stop("Problem with data order in P/A data")
                   }
                   
-                  
+
                   #Estimate suitabilities for PA data
                   
                   
@@ -685,6 +749,7 @@ rarified_eval_disdat <- function(presence_vector = (2:20)^2,
                   out_full$FN <- FN
                   
                   out_full$runtime <- runtime[3]
+                  out_full$entropy <- mean_ent_full$mean_ent
                   
                 }#End code that is only run if the model was fit      
                 
@@ -693,7 +758,12 @@ rarified_eval_disdat <- function(presence_vector = (2:20)^2,
                                           data.frame(species = species,
                                                      model = model, out_full))
                 
-                saveRDS(object = full_model_stats,file = temp_RDS)
+                fold_model_stats <- rbind(fold_model_stats,
+                                          data.frame(species = species_s, out))
+                
+                
+                saveRDS(object = full_model_stats,file = temp_full_RDS)
+                saveRDS(object = fold_model_stats,file = temp_fold_RDS)
                 
               
               
