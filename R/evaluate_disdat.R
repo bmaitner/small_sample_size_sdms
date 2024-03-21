@@ -184,10 +184,21 @@ evaluate_disdat <- function(presence_method = NULL,
                        
                        if(verbose){message(paste("Starting fold ",fold, " of ",length(unique(presence_data$fold))))}
                        
+                       # Populate fields that don't depend on model
+                       
+                       out$n_background[fold] <- nrow(background_s[,7:ncol(background_s)])
+                       out$n_presence[fold] <- nrow(presence_s[which(presence_data$fold!=fold),
+                                                               7:ncol(presence_s)])
+                       out$n_testing_background[fold] <- nrow(background_s[,7:ncol(background_s)])
+                       out$n_testing_presence[fold]  <- nrow(presence_s[which(presence_data$fold==fold),
+                                                                        7:ncol(presence_s)])
+                      
                        #This if statement skips cross validation if there is only one fold
+                       
                        if(length(unique(presence_data$fold)) == 1){
                          print("Skipping cross validation, only one fold")
-                         next
+                         return(out)
+                         
                        }
                        
                        model_fold <- NULL
@@ -241,14 +252,6 @@ evaluate_disdat <- function(presence_method = NULL,
                          
                        }
                        
-                       # Populate fields that don't depend on model
-                       
-                       out$n_background[fold] <- nrow(background_s[,7:ncol(background_s)])
-                       out$n_presence[fold] <- nrow(presence_s[which(presence_data$fold!=fold),
-                                                               7:ncol(presence_s)])
-                       out$n_testing_background[fold] <- nrow(background_s[,7:ncol(background_s)])
-                       out$n_testing_presence[fold]  <- nrow(presence_s[which(presence_data$fold==fold),
-                                                                        7:ncol(presence_s)])
                        
                        
                        
@@ -513,33 +516,33 @@ evaluate_disdat <- function(presence_method = NULL,
         
       }
       
-      # Get entropy
+      #get entropy
       
-      # setup needed files
+        # setup needed files
       
-        full_bg <- list()
-        full_bg[[1]] <- background_s[,7:ncol(background_s)]
-        full_bg[[2]] <- bg_means
-        full_bg[[3]] <- bg_sd
-        names(full_bg) <- c("env","env_mean","env_sd")
+          full_bg <- list()
+          full_bg[[1]] <- background_s[,7:ncol(background_s)]
+          full_bg[[2]] <- bg_means
+          full_bg[[3]] <- bg_sd
+          names(full_bg) <- c("env","env_mean","env_sd")
+        
+          full_pres <- list()
+          full_pres[[1]] <- presence_s[,7:ncol(presence_s)]
+          names(full_pres) <- "env"
+        
+        
+        response_curves_full <- get_response_curves(env_bg = full_bg,
+                                               env_pres = full_pres,
+                                               pnp_model = model_full,
+                                               n.int = 1000)
       
-        full_pres <- list()
-        full_pres[[1]] <- presence_s[,7:ncol(presence_s)]
-        names(full_pres) <- "env"
-      
-      
-      response_curves_full <- get_response_curves(env_bg = full_bg,
-                                             env_pres = full_pres,
-                                             pnp_model = model_full,
-                                             n.int = 1000)
-      
-      mean_ent_full <- 
-        response_curves_full %>%
-        select(variable,prediction) %>%
-        group_by(variable) %>%
-        summarise(entropy = Entropy(prediction)) %>%
-        ungroup() %>%
-        summarise(mean_ent = mean(entropy))
+          mean_ent_full <- 
+            response_curves_full %>%
+            select(variable,prediction) %>%
+            group_by(variable) %>%
+            summarise(entropy = Entropy(prediction)) %>%
+            ungroup() %>%
+            summarise(mean_ent = mean(entropy))
       
       
       full_suitability_v_occurrence <- 
