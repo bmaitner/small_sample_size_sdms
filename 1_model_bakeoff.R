@@ -8,6 +8,8 @@ library(pbsdm)
 library(tidyverse)
 library(sf)
 library(DescTools)
+library(foreach)
+library(doParallel)
 source("R/evaluate_disdat.R")
 
 #Select pnp modules to consider (as both numerator and denominator)
@@ -116,14 +118,35 @@ dr_models_to_evaluate <- c("ulsif","rulsif","maxnet")
 
 # Iterate through models
 
-full_model_outputs <- NULL
-fold_model_outputs <- NULL
+# Iterate through models
+
+full_model_outputs_dr <- NULL
+fold_model_outputs_dr <- NULL
+
+# Specify temp file
+
+tempfile_full_dr <- "outputs/temp_bakeoff_output_full_dr.rds"
+tempfile_fold_dr <- "outputs/temp_bakeoff_output_fold_dr.rds"
 
 for(i in 1:length(dr_models_to_evaluate)){
   
-  print("Note: can speed up code considerably by only fitting the background once per location and method,
-          since each region uses the same background points")
+  # If the temporary output files exist, check to see what they contain
   
+  if(file.exists(file.path(tempfile_fold_dr))){
+    fold_model_outputs_dr <- readRDS(file.path(tempfile_fold_dr))
+  }
+  
+  if(file.exists(file.path(tempfile_full_dr))){
+    full_model_outputs_dr <- readRDS(file.path(tempfile_full_dr))
+  }
+  
+
+  message("density ratio method: ", dr_models_to_evaluate[i])    
+  
+  if( any(fold_model_outputs_dr$ratio_method == dr_models_to_evaluate[i]) ){next}
+  
+  set.seed(2005) # The year Transformers: The Movie is set.
+
   model_i <- 
     evaluate_disdat(ratio_method = dr_models_to_evaluate[i])
   
@@ -136,6 +159,14 @@ for(i in 1:length(dr_models_to_evaluate)){
                               data.frame(ratio_method = dr_models_to_evaluate[i],
                                          model_i$fold_model_stats))
   
+  
+  # Save temporary files
+  
+  fold_model_outputs_dr %>%
+    saveRDS(file = file.path(tempfile_fold_dr))
+  
+  full_model_outputs_dr %>%
+    saveRDS(file.path(tempfile_full_dr))
   
 }
 
