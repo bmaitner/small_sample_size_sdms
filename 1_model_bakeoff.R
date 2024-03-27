@@ -13,9 +13,14 @@ library(doParallel)
 source("R/evaluate_disdat.R")
 
 #Select pnp modules to consider (as both numerator and denominator)
+
   pnp_components <- c("rangebagging",
                       "gaussian",
-                      "kde")
+                      "kde",
+                      "vine",
+                      "lobagoc")
+  
+  
   
 # Make full set of hybrid models to consider
   models_to_evaluate <- NULL
@@ -76,7 +81,8 @@ tempfile_fold <- "outputs/temp_bakeoff_output_fold.rds"
                     background_method = models_to_evaluate$background_method[i],
                     verbose = TRUE,
                     ratio_method = NULL,
-                    quantile = 0.05)
+                    quantile = 0.05,
+                    ncl = 5)
     
     full_model_outputs <- rbind(full_model_outputs,
                                 data.frame(pres_method = models_to_evaluate$presence_method[i],

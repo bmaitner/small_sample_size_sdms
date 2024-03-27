@@ -24,16 +24,8 @@ source("R/rarified_eval_disdat.R")
   full_model_output_all <- readRDS(file = "outputs/full_model_output_all.RDS")
   fold_model_output_all <- readRDS(file = "outputs/fold_model_output_all.RDS")
   
-  
-  presences <- unique(full_model_outputs[c("species","n_presence")])
 
-(1:10)^2
-
-stop("Coding still in progress")
-
-model_vector <- unique(full_model_output_all$method)
-model_vector <- model_vector[1]
-
+model_vector = c("maxnet") #need to add more selected models to this
 
 rarified_eval_disdat(presence_vector = (2:10)^2,
                      n_reps = 3,
@@ -42,11 +34,4 @@ rarified_eval_disdat(presence_vector = (2:10)^2,
                      temp_full_RDS = "outputs/temp_rarified_full.RDS",
                      temp_fold_RDS = "outputs/temp_rarified_fold.RDS")
 
-
-rarified_eval_disdat(presence_vector = (2:3)^2,
-                     n_reps = 2,
-                     model_vector,
-                     quantile = 0.05,
-                     temp_full_RDS = "outputs/temp_rarified_full.RDS",
-                     temp_fold_RDS = "outputs/temp_rarified_fold.RDS")
 

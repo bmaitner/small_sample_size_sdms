@@ -6,6 +6,7 @@ library(sf)
 #' @param n_reps Number of replicates for each presence level
 #' @param model_vector A vector of model names.  For presence/background, these should be specified as presence/background.
 #' @param quantile Quantile for thresholding, set at 0.05
+#' @param seed When drawing n rarified samples, the seed is set to seed + n to make things more reproducible.
 rarified_eval_disdat <- function(presence_vector = (2:10)^2,
                                  n_reps = 3,
                                  model_vector,
@@ -13,7 +14,8 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
                                  temp_full_RDS = "outputs/temp_rarified_full.RDS",
                                  temp_fold_RDS = "outputs/temp_rarified_fold.RDS",
                                  verbose = TRUE,
-                                 ncl=5){
+                                 ncl=5,
+                                 seed=2005){
 
   
   # Load files if they exist
@@ -121,17 +123,21 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
           if(region == "NZ"){epsg <- 27200}
           if(region == "SA"){epsg <- 4326}
           if(region == "SWI"){epsg <- 21781}
+        
+        
+      focal_species %>%
+        rename(focal_region = region) %>%
+        filter(focal_region == region) -> region_focal_species        
           
-          
-      for(s in 1:length(unique(focal_species$spid))){
+      for(s in 1:length(unique(region_focal_species$spid))){
         
             message("Starting species ", s, " of ",
-                    length(unique(focal_species$spid)), " : ",
-                    unique(focal_species$spid)[s])
+                    length(unique(region_focal_species$spid)), " : ",
+                    unique(region_focal_species$spid)[s])
         
         
             #Pull the necessary species data
-            species <- unique(focal_species$spid)[s]
+            species <- unique(region_focal_species$spid)[s]
             group_s <- unique(data_i$po$group[which(data_i$po$spid == species)])    
             #presence_s <- data_i$po[which(data_i$po$spid == species),]
             background_s <- data_i$bg
@@ -153,6 +159,8 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
             message("starting presence size ",p )
           
           for(n in 1:n_reps){
+            
+            set.seed(seed+n)
             
             message("starting rep ",n, " of ", n_reps)
 
@@ -221,6 +229,7 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
                 #Make empty output
                 
                 out <- data.frame(fold = 1:length(unique(presence_data$fold)),
+                                  total_sample_size = p,
                                   training_AUC = NA,
                                   training_pAUC_specificity = NA,
                                   training_pAUC_sensitivity = NA,
@@ -931,7 +940,7 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
                                               sd_vector = bg_sd)
                   
                   
-                  if(!all(pres_abs_data_s$siteid == data_i$pa$siteid[which(data_i$pa$spid == species_s)])){
+                  if(!all(pres_abs_data_s$siteid == data_i$pa$siteid[which(data_i$pa$spid == species)])){
                     stop("Problem with data order in P/A data")
                   }
                   
@@ -1038,7 +1047,7 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
                                                      model = model, out_full))
                 
                 fold_model_stats <- rbind(fold_model_stats,
-                                          data.frame(species = species_s, out))
+                                          data.frame(species = species, out))
                 
                 
                 saveRDS(object = full_model_stats,file = temp_full_RDS)
