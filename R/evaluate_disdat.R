@@ -575,19 +575,25 @@ evaluate_disdat <- function(presence_method = NULL,
                           level = c(0,1),
                           direction = "<")
       
-      
-      
-      out_full$full_pAUC_specificity <- pROC::auc(roc = full_roc_obj,
-                                            partial.auc = c(.8, 1),
-                                            partial.auc.correct = TRUE,
-                                            partial.auc.focus = "specificity")[[1]]
-      
-      out_full$full_pAUC_sensitivity <- pROC::auc(roc = full_roc_obj,
-                                            partial.auc = c(.8, 1),
-                                            partial.auc.correct = TRUE,
-                                            partial.auc.focus = "sensitivity")[[1]]
-      
-      out_full$full_AUC <- full_roc_obj$auc
+      # only do auc stuff if the roc object worked properly
+        
+        if(inherits(full_roc_obj,"roc")){
+          
+        
+        
+        out_full$full_pAUC_specificity <- pROC::auc(roc = full_roc_obj,
+                                              partial.auc = c(.8, 1),
+                                              partial.auc.correct = TRUE,
+                                              partial.auc.focus = "specificity")[[1]]
+        
+        out_full$full_pAUC_sensitivity <- pROC::auc(roc = full_roc_obj,
+                                              partial.auc = c(.8, 1),
+                                              partial.auc.correct = TRUE,
+                                              partial.auc.focus = "sensitivity")[[1]]
+        
+        out_full$full_AUC <- full_roc_obj$auc
+        
+        }
       
       full_suitability_v_occurrence <- na.omit(full_suitability_v_occurrence)
       
