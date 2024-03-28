@@ -17,7 +17,9 @@ source("R/rarified_eval_disdat.R")
 
   stop("this needs updating after models finish running")
 
-model_vector = c("maxnet","rangebagging/none") #need to add more selected models to this
+model_vector = c("maxnet",
+                 "rangebagging/none",
+                 "kde/kde") #need to add more selected models to this
 
 
 rarified_eval_disdat(presence_vector = (2:10)^2,
