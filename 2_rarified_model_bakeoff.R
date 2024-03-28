@@ -17,21 +17,17 @@ source("R/rarified_eval_disdat.R")
 
   stop("this needs updating after models finish running")
 
-  fold_model_outputs <- readRDS("outputs/bake_off_pnp_fold_model_outputs.RDS")
-  full_model_outputs <- readRDS("outputs/bake_off_pnp_full_model_outputs.RDS")
+model_vector = c("maxnet","rangebagging/none") #need to add more selected models to this
 
-  
-  full_model_output_all <- readRDS(file = "outputs/full_model_output_all.RDS")
-  fold_model_output_all <- readRDS(file = "outputs/fold_model_output_all.RDS")
-  
-
-model_vector = c("maxnet") #need to add more selected models to this
 
 rarified_eval_disdat(presence_vector = (2:10)^2,
                      n_reps = 3,
                      model_vector,
                      quantile = 0.05,
                      temp_full_RDS = "outputs/temp_rarified_full.RDS",
-                     temp_fold_RDS = "outputs/temp_rarified_fold.RDS")
+                     temp_fold_RDS = "outputs/temp_rarified_fold.RDS",
+                     verbose = TRUE,
+                     ncl = 5,
+                     seed = 2005)
 
 
