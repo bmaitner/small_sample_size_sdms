@@ -349,17 +349,27 @@ evaluate_disdat <- function(presence_method = NULL,
                                                      level = c(0,1),
                                                      direction = "<")
                        
-                       out$training_AUC[fold] <- training_roc_obj$auc
                        
-                       out$training_pAUC_specificity[fold] <- pROC::auc(roc = training_roc_obj,
-                                                                        partial.auc = c(.8, 1),
-                                                                        partial.auc.correct = TRUE,
-                                                                        partial.auc.focus = "specificity")[[1]]
+                       # only attempt to use ROC if it could be calculated properly
                        
-                       out$training_pAUC_sensitivity[fold] <- pROC::auc(roc = training_roc_obj,
-                                                                        partial.auc = c(.8, 1),
-                                                                        partial.auc.correct = TRUE,
-                                                                        partial.auc.focus = "sensitivity")[[1]]
+                       if(inherits(training_roc_obj,"roc")){
+                         
+                         
+                         out$training_AUC[fold] <- training_roc_obj$auc
+                         
+                         
+                         out$training_pAUC_specificity[fold] <- pROC::auc(roc = training_roc_obj,
+                                                                          partial.auc = c(.8, 1),
+                                                                          partial.auc.correct = TRUE,
+                                                                          partial.auc.focus = "specificity")[[1]]
+                         
+                         out$training_pAUC_sensitivity[fold] <- pROC::auc(roc = training_roc_obj,
+                                                                          partial.auc = c(.8, 1),
+                                                                          partial.auc.correct = TRUE,
+                                                                          partial.auc.focus = "sensitivity")[[1]]
+                         }
+                         
+                        
                        
                        #Testing data
                        
@@ -368,17 +378,27 @@ evaluate_disdat <- function(presence_method = NULL,
                                                     level = c(0,1),
                                                     direction = "<")
                        
-                       out$testing_AUC[fold] <- testing_roc_obj$auc
+                       # only use ROC if it was correctly calculated
                        
-                       out$testing_pAUC_specificity[fold] <- pROC::auc(roc = testing_roc_obj,
-                                                                       partial.auc = c(.8, 1),
-                                                                       partial.auc.correct = TRUE,
-                                                                       partial.auc.focus = "specificity")[[1]]
-                       
-                       out$testing_pAUC_sensitivity[fold] <- pROC::auc(roc = testing_roc_obj,
-                                                                       partial.auc = c(.8, 1),
-                                                                       partial.auc.correct = TRUE,
-                                                                       partial.auc.focus = "sensitivity")[[1]]
+                         if(inherits(testing_roc_obj,"roc")){
+                           
+                           out$testing_AUC[fold] <- testing_roc_obj$auc
+                           
+                           out$testing_pAUC_specificity[fold] <- pROC::auc(roc = testing_roc_obj,
+                                                                           partial.auc = c(.8, 1),
+                                                                           partial.auc.correct = TRUE,
+                                                                           partial.auc.focus = "specificity")[[1]]
+                           
+                           out$testing_pAUC_sensitivity[fold] <- pROC::auc(roc = testing_roc_obj,
+                                                                           partial.auc = c(.8, 1),
+                                                                           partial.auc.correct = TRUE,
+                                                                           partial.auc.focus = "sensitivity")[[1]]
+                           
+                           
+                           
+                         }
+                         
+
                        
                        
                        # Code to make testing suitability scores binary
