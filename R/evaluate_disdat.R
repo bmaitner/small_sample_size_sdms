@@ -677,11 +677,15 @@ evaluate_disdat <- function(presence_method = NULL,
           data.frame(suitability = pa_predictions,
                      occurrence =  data_i$pa$pa[which(data_i$pa$spid == species_s)])
         
-        
         pa_roc_obj <- pROC::roc(response = pa_suitability_v_occurrence$occurrence,
                           predictor = pa_suitability_v_occurrence$suitability,
                           level = c(0,1),
                           direction = "<")
+        
+        # only do auc stuff if the roc object worked properly
+        
+        if(inherits(pa_roc_obj,"roc")){
+          
         
         out_full$pa_pAUC_specificity <- pROC::auc(roc = pa_roc_obj,
                                             partial.auc = c(.8, 1),
@@ -694,6 +698,8 @@ evaluate_disdat <- function(presence_method = NULL,
                                             partial.auc.focus = "sensitivity")[[1]]
         
         out_full$pa_AUC <- pa_roc_obj$auc
+        
+        }
         
         pa_suitability_v_occurrence <- na.omit(pa_suitability_v_occurrence)
         
