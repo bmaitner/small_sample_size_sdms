@@ -4,6 +4,7 @@ tempfile_full <- "outputs/temp_bakeoff_output_full.rds"
 tempfile_fold <- "outputs/temp_bakeoff_output_fold.rds"
 
 tempfile_full_dr <- "outputs/temp_bakeoff_output_full_dr.rds"
+tempfile_fold_dr <- "outputs/temp_bakeoff_output_fold_dr.rds"
 
 full_output <- readRDS(tempfile_full)
 full_output_dr <- readRDS(tempfile_full_dr)
@@ -17,10 +18,10 @@ full_output_dr %>%
          full_AUC = as.numeric(full_AUC)) -> full_output_dr
 
 
-full_output_dr %>%
-  rename(pres_method = ratio_method) %>%
-  mutate(bg_method = "none") %>%
-  bind_rows(full_output) -> full_output
+# full_output_dr %>%
+#   rename(pres_method = ratio_method) %>%
+#   mutate(bg_method = "none") %>%
+#   bind_rows(full_output) -> full_output
 
 full_output_dr %>%
   bind_rows(full_output)->full_output
@@ -38,6 +39,7 @@ library(tidyverse)
 
   full_output %>%
   group_by(model)%>%
+    filter(!is.nan(entropy))%>%
     summarise(mean_ent = mean(entropy,na.rm = TRUE))%>%
     arrange(mean_ent)
 
@@ -45,8 +47,8 @@ library(tidyverse)
   
   full_output <-
   full_output %>%
-    mutate(pres_method = factor(pres_method, levels = c("kde","gaussian","rangebagging")),
-           bg_method = factor(bg_method, levels = c("kde","gaussian","rangebagging","none")))
+    mutate(pres_method = factor(pres_method, levels = c("kde","gaussian","rangebagging","lobagoc")),
+           bg_method = factor(bg_method, levels = c("kde","gaussian","rangebagging","lobagoc","none")))
 
 # Entropy plot
 
@@ -507,3 +509,211 @@ library(ggpubr)
               legend = "bottom")
     
   
+### Dr models vs other models    
+    
+    sens_dr_line_alt <-  
+      full_output %>%
+      filter(model %in% c("maxnet","ulsif","rulsif",
+                          "rangebagging / none",
+                          "gaussian / gaussian",
+                          "kde / kde")) %>%
+      ggplot(mapping = aes(x=log10(n_presence),
+                           color=model,
+                           y= pa_sensitivity))+
+      geom_point(alpha=0.1)+
+      geom_smooth(aes(color=model),se = FALSE)+
+      #facet_grid(~ pres_method) +
+      scale_y_continuous(limits = c(0,1),expand = c(0,0))+
+      # scale_y_continuous(sec.axis =
+      #                      sec_axis(~ . , name = "Presence Method",
+      #                               labels = NULL, breaks = NULL))+
+      scale_x_continuous(sec.axis =
+                           sec_axis(~ . , name = "Presence Method",
+                                    labels = NULL, breaks = NULL))+
+      xlab("log10(presences)")+
+      ylab("Sensitivity (P/A)")+
+      #scale_color_gradient(low = "#2efcff",high="magenta")+
+      theme_bw()+
+      labs(color = "Background\nMethod")
+
+    spec_dr_line_alt <-  
+      full_output %>%
+      filter(model %in% c("maxnet","ulsif","rulsif",
+                          "rangebagging / none",
+                          "gaussian / gaussian",
+                          "kde / kde")) %>%
+      ggplot(mapping = aes(x=log10(n_presence),
+                           color=model,
+                           y= pa_specificity))+
+      geom_point(alpha=0.1)+
+      geom_smooth(aes(color=model),se = FALSE)+
+      #facet_grid(~ pres_method) +
+      scale_y_continuous(limits = c(0,1),expand = c(0,0))+
+      # scale_y_continuous(sec.axis =
+      #                      sec_axis(~ . , name = "Presence Method",
+      #                               labels = NULL, breaks = NULL))+
+      scale_x_continuous(sec.axis =
+                           sec_axis(~ . , name = "Presence Method",
+                                    labels = NULL, breaks = NULL))+
+      xlab("log10(presences)")+
+      ylab("Specificity (P/A)")+
+      #scale_color_gradient(low = "#2efcff",high="magenta")+
+      theme_bw()+
+      labs(color = "Background\nMethod")
+    
+    auc_dr_line_alt <-  
+      full_output %>%
+      filter(model %in% c("maxnet","ulsif","rulsif",
+                          "rangebagging / none",
+                          "gaussian / gaussian",
+                          "kde / kde")) %>%
+      ggplot(mapping = aes(x=log10(n_presence),
+                           color=model,
+                           y= pa_AUC))+
+      geom_point(alpha=0.1)+
+      geom_smooth(aes(color=model),se = FALSE)+
+      #facet_grid(~ pres_method) +
+      scale_y_continuous(limits = c(0,1),expand = c(0,0))+
+      # scale_y_continuous(sec.axis =
+      #                      sec_axis(~ . , name = "Presence Method",
+      #                               labels = NULL, breaks = NULL))+
+      scale_x_continuous(sec.axis =
+                           sec_axis(~ . , name = "Presence Method",
+                                    labels = NULL, breaks = NULL))+
+      xlab("log10(presences)")+
+      ylab("AUC (P/A)")+
+      #scale_color_gradient(low = "#2efcff",high="magenta")+
+      theme_bw()+
+      labs(color = "Background\nMethod")
+    
+
+    ent_dr_line_alt <-  
+      full_output %>%
+      filter(model %in% c("maxnet","ulsif","rulsif",
+                          "rangebagging / none",
+                          "gaussian / gaussian",
+                          "kde / kde")) %>%
+      ggplot(mapping = aes(x=log10(n_presence),
+                           color=model,
+                           y= entropy))+
+      geom_point(alpha=0.1)+
+      geom_smooth(aes(color=model),se = FALSE)+
+      #facet_grid(~ pres_method) +
+      scale_y_continuous(limits = c(0,11),expand = c(0,0))+
+      # scale_y_continuous(sec.axis =
+      #                      sec_axis(~ . , name = "Presence Method",
+      #                               labels = NULL, breaks = NULL))+
+      scale_x_continuous(sec.axis =
+                           sec_axis(~ . , name = "Presence Method",
+                                    labels = NULL, breaks = NULL))+
+      xlab("log10(presences)")+
+      ylab("Entropy")+
+      #scale_color_gradient(low = "#2efcff",high="magenta")+
+      theme_bw()+
+      labs(color = "Background\nMethod")
+    
+#####################
+
+    # Rarified data
+    
+    out_rarified_full <- readRDS("outputs/temp_rarified_full.RDS")
+    out_rarified_fold <- readRDS("outputs/temp_rarified_fold.RDS")
+    
+    
+
+    
+    
+#####################        
+    #Useful to plot AUC vs pa AUC? (show overfitting?)
+    
+    
+    sens_rare_line <-  
+      out_rarified_full %>%
+      drop_na()%>%
+      ggplot(mapping = aes(x=n_presence,
+                           color=model,
+                           y= pa_sensitivity))+
+      geom_point(alpha=0.1)+
+      geom_smooth(aes(color=model),se = FALSE,method = "loess")+
+      #facet_grid(~ pres_method) +
+      scale_y_continuous(limits = c(0,1),expand = c(0,0))+
+      # scale_y_continuous(sec.axis =
+      #                      sec_axis(~ . , name = "Presence Method",
+      #                               labels = NULL, breaks = NULL))+
+      scale_x_sqrt()+
+      # scale_x_continuous(sec.axis =
+      #                      sec_axis(~ . , name = "Presence Method",
+      #                               labels = NULL, breaks = NULL))+
+      xlab("Presences")+
+      ylab("Sensitivity (P/A)")+
+      #scale_color_gradient(low = "#2efcff",high="magenta")+
+      theme_bw()+
+      labs(color = "Model")
+    
+    spec_rare_line <-  
+      out_rarified_full %>%
+      drop_na()%>%
+      ggplot(mapping = aes(x=n_presence,
+                           color=model,
+                           y= pa_specificity))+
+      geom_point(alpha=0.1)+
+      geom_smooth(aes(color=model),se = FALSE,method = "loess")+
+      scale_y_continuous(limits = c(0,1),expand = c(0,0))+
+      scale_x_sqrt()+
+      xlab("Presences")+
+      ylab("Specificity (P/A)")+
+      theme_bw()+
+      labs(color = "Model")    
+    
+    auc_rare_line <-  
+      out_rarified_full %>%
+      drop_na()%>%
+      ggplot(mapping = aes(x=n_presence,
+                           color=model,
+                           y= pa_AUC))+
+      geom_point(alpha=0.1)+
+      geom_smooth(aes(color=model),se = FALSE,method = "loess")+
+      scale_y_continuous(limits = c(0,1),expand = c(0,0))+
+      scale_x_sqrt()+
+      xlab("Presences")+
+      ylab("AUC (P/A)")+
+      theme_bw()+
+      labs(color = "Model")    
+    
+    runtime_rare_line <-  
+      out_rarified_full %>%
+      drop_na()%>%
+      ggplot(mapping = aes(x=n_presence,
+                           color=model,
+                           y= runtime))+
+      geom_point(alpha=0.1)+
+      geom_smooth(aes(color=model),se = FALSE,method = "loess")+
+      #scale_y_continuous(limits = c(0,1),expand = c(0,0))+
+      scale_x_sqrt()+
+      xlab("Presences")+
+      ylab("Runtime (s)")+
+      theme_bw()+
+      labs(color = "Model")
+    
+    entropy_rare_line <-  
+      out_rarified_full %>%
+      drop_na()%>%
+      ggplot(mapping = aes(x=n_presence,
+                           color=model,
+                           y= entropy))+
+      geom_point(alpha=0.1)+
+      geom_smooth(aes(color=model),se = FALSE,method = "loess")+
+      #scale_y_continuous(limits = c(0,1),expand = c(0,0))+
+      scale_x_sqrt()+
+      xlab("Presences")+
+      ylab("Entropy")+
+      theme_bw()+
+      labs(color = "Model")
+    
+    ggarrange(sens_rare_line,
+              spec_rare_line,
+              auc_rare_line,
+              entropy_rare_line,
+              common.legend = TRUE,
+              legend = "bottom")
+    
