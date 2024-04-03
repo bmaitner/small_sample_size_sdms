@@ -612,6 +612,32 @@ library(ggpubr)
       theme_bw()+
       labs(color = "Background\nMethod")
     
+    runtime_dr_line_alt <-  
+      full_output %>%
+      filter(model %in% c("maxnet","ulsif","rulsif",
+                          "rangebagging / none",
+                          "gaussian / gaussian",
+                          "kde / kde")) %>%
+      ggplot(mapping = aes(x=log10(n_presence),
+                           color=model,
+                           y= runtime))+
+      geom_point(alpha=0.1)+
+      geom_smooth(aes(color=model),se = FALSE)+
+      #facet_grid(~ pres_method) +
+      #scale_y_continuous(limits = c(0,11),expand = c(0,0))+
+      # scale_y_continuous(sec.axis =
+      #                      sec_axis(~ . , name = "Presence Method",
+      #                               labels = NULL, breaks = NULL))+
+      scale_x_continuous(sec.axis =
+                           sec_axis(~ . , name = "Presence Method",
+                                    labels = NULL, breaks = NULL))+
+      xlab("log10(presences)")+
+      ylab("Runtime (s)")+
+      #scale_color_gradient(low = "#2efcff",high="magenta")+
+      theme_bw()+
+      labs(color = "Background\nMethod")
+    
+    
 #####################
 
     # Rarified data
@@ -716,4 +742,9 @@ library(ggpubr)
               entropy_rare_line,
               common.legend = TRUE,
               legend = "bottom")
+    
+    
+    out_rarified_full %>%
+      group_by(model)%>%
+      summarise(n=n())
     
