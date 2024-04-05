@@ -1,3 +1,4 @@
+
 library(tidyverse)
 
 tempfile_full <- "outputs/temp_bakeoff_output_full.rds"
@@ -47,8 +48,8 @@ library(tidyverse)
   
   full_output <-
   full_output %>%
-    mutate(pres_method = factor(pres_method, levels = c("kde","gaussian","rangebagging","lobagoc")),
-           bg_method = factor(bg_method, levels = c("kde","gaussian","rangebagging","lobagoc","none")))
+    mutate(pres_method = factor(pres_method, levels = c("kde","vine","gaussian","rangebagging","lobagoc")),
+           bg_method = factor(bg_method, levels = c("kde","vine","gaussian","rangebagging","lobagoc","none")))
 
 # Entropy plot
 
