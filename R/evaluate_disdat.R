@@ -180,7 +180,7 @@ evaluate_disdat <- function(presence_method = NULL,
       
       out <- foreach(fold = 1:length(unique(presence_data$fold)),
                      .packages = c("pbsdm","tidyverse","DescTools"),
-                     .combine = "rbind") %do% {
+                     .combine = "rbind") %dopar% {
                        
                        if(verbose){message(paste("Starting fold ",fold, " of ",length(unique(presence_data$fold))))}
                        
