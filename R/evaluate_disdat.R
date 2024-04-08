@@ -180,7 +180,7 @@ evaluate_disdat <- function(presence_method = NULL,
       
       out <- foreach(fold = 1:length(unique(presence_data$fold)),
                      .packages = c("pbsdm","tidyverse","DescTools"),
-                     .combine = "rbind") %dopar% {
+                     .combine = "rbind") %do% {
                        
                        if(verbose){message(paste("Starting fold ",fold, " of ",length(unique(presence_data$fold))))}
                        
@@ -344,11 +344,13 @@ evaluate_disdat <- function(presence_method = NULL,
                                                                                           rep(0,nrow(background_s))))
                        
                        
-                       training_roc_obj <- pROC::roc(response = fold_training_suitability_v_occurrence$occurrence,
-                                                     predictor = fold_training_suitability_v_occurrence$suitability,
-                                                     level = c(0,1),
-                                                     direction = "<")
+                       training_roc_obj <- NULL
                        
+                       training_roc_obj <- tryCatch(pROC::roc(response = fold_training_suitability_v_occurrence$occurrence,
+                                                          predictor = fold_training_suitability_v_occurrence$suitability,
+                                                          level = c(0,1),
+                                                          direction = "<"),
+                                                error = function(e){e})
                        
                        # only attempt to use ROC if it could be calculated properly
                        
@@ -372,11 +374,15 @@ evaluate_disdat <- function(presence_method = NULL,
                         
                        
                        #Testing data
+
+                       testing_roc_obj <- NULL
                        
-                       testing_roc_obj <- pROC::roc(response = fold_testing_suitability_v_occurrence$occurrence,
-                                                    predictor = fold_testing_suitability_v_occurrence$suitability,
-                                                    level = c(0,1),
-                                                    direction = "<")
+                       testing_roc_obj <- tryCatch(pROC::roc(response = fold_testing_suitability_v_occurrence$occurrence,
+                                                              predictor = fold_testing_suitability_v_occurrence$suitability,
+                                                              level = c(0,1),
+                                                              direction = "<"),
+                                                    error = function(e){e})
+                       
                        
                        # only use ROC if it was correctly calculated
                        
