@@ -570,10 +570,13 @@ evaluate_disdat <- function(presence_method = NULL,
                    occurrence = c(rep(1,nrow(presence_s)),
                                   rep(0,nrow(background_s))))
       
-      full_roc_obj <- pROC::roc(response = full_suitability_v_occurrence$occurrence,
-                          predictor = full_suitability_v_occurrence$suitability,
-                          level = c(0,1),
-                          direction = "<")
+      full_roc_obj <- NULL
+      
+      full_roc_obj <- tryCatch(pROC::roc(response = full_suitability_v_occurrence$occurrence,
+                                               predictor = full_suitability_v_occurrence$suitability,
+                                               level = c(0,1),
+                                               direction = "<"),
+               error = function(e){e})
       
       # only do auc stuff if the roc object worked properly
         
@@ -677,10 +680,13 @@ evaluate_disdat <- function(presence_method = NULL,
           data.frame(suitability = pa_predictions,
                      occurrence =  data_i$pa$pa[which(data_i$pa$spid == species_s)])
         
-        pa_roc_obj <- pROC::roc(response = pa_suitability_v_occurrence$occurrence,
+        pa_roc_obj <- NULL
+        
+        pa_roc_obj <- tryCatch( pROC::roc(response = pa_suitability_v_occurrence$occurrence,
                           predictor = pa_suitability_v_occurrence$suitability,
                           level = c(0,1),
-                          direction = "<")
+                          direction = "<"),
+                          error = function(e){e})
         
         # only do auc stuff if the roc object worked properly
         
