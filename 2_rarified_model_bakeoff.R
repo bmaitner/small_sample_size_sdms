@@ -19,10 +19,12 @@ source("R/rarified_eval_disdat.R")
 
 model_vector = c("maxnet",
                  "rangebagging/none",
-                 "kde/kde") #need to add more selected models to this
+                 "kde/kde",
+                 "gaussian/gaussian",
+                 "gaussian/none") #need to add more selected models to this
 
 
-rarified_eval_disdat(presence_vector = (2:10)^2,
+rarified_eval_disdat(presence_vector = (1:10)^2,
                      n_reps = 3,
                      model_vector,
                      quantile = 0.05,
