@@ -210,19 +210,45 @@ library(tidyverse)
   
   # stats on model performance
   
+    # function to wrangle marginal effects
+    
+      library(margins)
+  
+      get_marg_df <- function(model){
+        
+        data.frame(response = model$formula[[2]] %>% as.character(),
+                   model %>% margins() %>% summary())
+      }
+  
+    # function to wrangle interaction effects
+      
+      source("R/get_int_effects.R")
+
+  
+  # plot to identify full-rank
+  
+  full_output %>%
+    ggplot(mapping = aes(x = n_presence,
+                         y = pa_AUC))+
+    geom_point()+
+    facet_grid(pres_method ~ bg_method)
+  
+  
   library(betareg)
   library(glmmTMB)
+  library(pscl)
   
   # set up data for marginal
   
   marginal_stats <-NULL
-  
+  int_stats <- NULL  
 
 #AUC
-    betareg(data = combined_output %>%
+    betareg(data = full_output %>%
+              filter(!is.na(pres_method))%>%
               mutate(n_presence = log10(n_presence))%>%
-              filter(!pres_method %in% c("vine"),
-                     !bg_method %in% c("lobagoc")) %>%
+              filter(!pres_method %in% c("vine","lobagoc"),
+                     !bg_method %in% c("lobagoc","vine")) %>%
               dplyr::select(pa_AUC,pres_method,bg_method,n_presence)%>%
               na.omit() %>%
               unique(),
@@ -231,38 +257,44 @@ library(tidyverse)
             + pres_method*bg_method,
             #link = "logit",
             type="BR") -> AUC_model
-    
-    #pseudor2 = ~.15
   
-      
-    summary(AUC_model)
+  
+    glmmTMB(data = full_output %>%
+              filter(!is.na(pres_method))%>%
+              mutate(n_presence = log10(n_presence))%>%
+              filter(!pres_method %in% c("vine","lobagoc"),
+                     !bg_method %in% c("lobagoc","vine")) %>%
+              dplyr::select(pa_AUC,pres_method,bg_method,n_presence)%>%
+              na.omit() %>%
+              unique(),
+            formula = pa_AUC ~ pres_method + bg_method + n_presence
+            + n_presence*pres_method
+            + pres_method*bg_method,
+            family = beta_family()) -> AUC_model_alt
 
-  
-# function to wrangle marginal effects
-    
-    library(margins)
-      get_marg_df <- function(model){
-        
-          data.frame(response = model$formula[[2]] %>% as.character(),
-                     model %>% margins() %>% summary())
-      }
-      
+    #pseudor2 = ~.15
+
+    summary(AUC_model)
 
       marginal_stats <-
         bind_rows(marginal_stats,
           data.frame(get_marg_df(AUC_model),
                      model_r2 = AUC_model$pseudo.r.squared))
       
-      
-            
+      int_stats <-
+        bind_rows(int_stats,
+                  data.frame(get_int_effects(model = AUC_model_alt))
+                  )
+
 #spec (need to use a model that includes 0 and 1)
 
-      glm(data = combined_output %>%
-            mutate(n_presence = log10(n_presence))%>%
+      glm(data = full_output %>%
+            filter(!is.na(pres_method))%>%
+            mutate(n_presence = log10(n_presence)) %>%
           rowwise()%>%
           mutate(n_pa_pts_total = sum(n_pa_absence+n_pa_presence))%>%
-          filter(!pres_method %in% c("vine"),
-                 !bg_method %in% c("lobagoc")) %>%
+          filter(!pres_method %in% c("vine", "lobagoc"),
+                 !bg_method %in% c("lobagoc", "vine")) %>%
           dplyr::select(pa_sensitivity,pres_method,bg_method,n_presence,n_pa_pts_total,species)%>%
           na.omit() %>%
           unique(),
@@ -272,20 +304,26 @@ library(tidyverse)
         family = "binomial"
         #,weights = n_pa_pts_total
         ) -> sens_model
-
+      
+      summary(sens_model)
       
       marginal_stats <-
         bind_rows(marginal_stats,
           data.frame(get_marg_df(sens_model),
                      model_r2 = pR2(sens_model)['McFadden']))
       
-    glm(data = combined_output %>%
+      int_stats <-
+        bind_rows(int_stats,
+                  data.frame(get_int_effects(model = sens_model))
+                  )
+      
+      
+    glm(data = full_output %>%
           mutate(n_presence = log10(n_presence))%>%
-          
           rowwise()%>%
           mutate(n_pa_pts_total = sum(n_pa_absence+n_pa_presence))%>%
-          filter(!pres_method %in% c("vine"),
-                 !bg_method %in% c("lobagoc")) %>%
+          filter(!pres_method %in% c("vine","lobagoc"),
+                 !bg_method %in% c("lobagoc","vine")) %>%
           dplyr::select(pa_specificity,pres_method,bg_method,n_presence,n_pa_pts_total)%>%
           na.omit() %>%
           unique(),
@@ -300,7 +338,11 @@ library(tidyverse)
           bind_rows(marginal_stats,
                     data.frame(get_marg_df(spec_model),
                                model_r2 = pR2(spec_model)['McFadden']))
-        
+
+        int_stats <-
+          bind_rows(int_stats,
+                    data.frame(get_int_effects(model = spec_model))
+          )
         
         # Marginal plots to ask how (in general) they're different 
 
@@ -319,7 +361,8 @@ library(tidyverse)
         
         
             marg_for_gg %>%
-            mutate(factor = factor(factor,levels=marg_for_gg %>%
+            mutate(factor = factor(factor,
+                                   levels=marg_for_gg %>%
                                      arrange(plot_order,factor) %>%
                                      pull(factor) %>%
                                      unique()
@@ -346,8 +389,43 @@ library(tidyverse)
             ggsave(plot = marginals_plot, filename = "figures/marginals_plot.jpg",
                    width = 10,height = 5,units = "in",dpi = 600)
             
+            
+      # Interaction plots
+            
+      
+      int_stats %>%
+        mutate(model = paste(pres_method,"/",bg_method,sep = ""))%>%
+        mutate(response = case_when(response == "pa_AUC" ~ "AUC",
+                                    response == "pa_sensitivity" ~ "Sensitivity",
+                                    response == "pa_specificity" ~ "Specificity"))%>%
+        ggplot(mapping = aes(x=model,
+                             y=fit))+
+        geom_point()+
+        geom_errorbar(mapping = aes(ymin = fit - se.fit,
+                                    ymax = fit + se.fit))+
+        facet_wrap(~response,
+                   ncol = 1,
+                   scales = "free_y")+
+        theme_bw()+
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+        geom_vline(
+          aes(xintercept =  stage(model, after_scale = 4.5)),
+          colour = "grey"
+        )+
+        geom_vline(
+          aes(xintercept =  stage(model, after_scale = 8.5)),
+          colour = "grey"
+        ) +
+        ylab(NULL) +
+        xlab("Model") -> interactions_plot
 
+      
+      ggsave(plot = interactions_plot, filename = "figures/interactions_plot.svg",
+             width = 10,height = 6,units = "in",dpi = 600)
+      
+      ggsave(plot = interactions_plot, filename = "figures/interactions_plot.jpg",
+             width = 10,height = 6,units = "in",dpi = 600)
+      
+            
         
         # Anova of homotypic vs heterotypic models in general? Or t-test?
-        # ANOVA of model (pres+bg as a single value) to test for difference in AUC, etc
-          # may be best to import to GGPLOT to make prettier
