@@ -21,7 +21,13 @@ model_vector = c("maxnet",
                  "rangebagging/none",
                  "kde/kde",
                  "gaussian/gaussian",
-                 "gaussian/none") #need to add more selected models to this
+                 "gaussian/none",
+                 "kde/none",
+                 "rulsif",
+                 "gaussian/kde"
+                 #,"lobagoc/none" # need debugging AUC calc
+                 #,"vine/none"    # need debugging AUC calc
+                 ) #need to add more selected models to this
 
 
 rarified_eval_disdat(presence_vector = (1:10)^2,
@@ -35,3 +41,5 @@ rarified_eval_disdat(presence_vector = (1:10)^2,
                      seed = 2005)
 
 
+# Setting levels: control = 0, case = 1
+# Setting direction: controls < cases

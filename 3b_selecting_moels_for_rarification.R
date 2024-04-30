@@ -1,5 +1,36 @@
 #load packages
 library(confintr)
+# Load libraries
+
+library(tidyverse)
+library(ggplot2)
+library(tidyverse)
+
+# Load and format full data
+
+tempfile_full <- "outputs/temp_bakeoff_output_full.rds"
+tempfile_full_dr <- "outputs/temp_bakeoff_output_full_dr.rds"
+
+
+full_output <- readRDS(tempfile_full)
+full_output_dr <- readRDS(tempfile_full_dr)
+
+full_output %>%
+  mutate(pa_AUC = as.numeric(pa_AUC),
+         full_AUC = as.numeric(full_AUC)) -> full_output
+
+full_output_dr %>%
+  mutate(pa_AUC = as.numeric(pa_AUC),
+         full_AUC = as.numeric(full_AUC)) -> full_output_dr
+
+full_output_dr %>%
+  bind_rows(full_output)->full_output
+
+full_output %>%
+  mutate(model = case_when(!is.na(ratio_method) ~ ratio_method,
+                           is.na(ratio_method) ~ paste(pres_method, "/", bg_method))) -> full_output
+
+rm(full_output_dr)
 
 # combining fold data with full data
 
@@ -24,6 +55,9 @@ full_output %>%
 
 #########
 
+
+
+#################
 
 combined_output %>%
   filter(n_presence <= 20)%>%
@@ -95,4 +129,81 @@ combined_output %>%
 
                       
 
+##################
 
+# entropy
+full_output %>%
+  filter(bg_method == "none" | is.na(bg_method))%>%
+  filter(n_presence > 20)%>%
+  ggplot(mapping = aes(x=log10(n_presence),
+                       y=entropy,
+                       color=model))+
+  geom_point()+
+  geom_smooth(method = "lm")
+
+# ent vs spec
+
+  full_output %>%
+    filter(bg_method == "none" | is.na(bg_method))%>%
+    filter(n_presence > 20)%>%
+    ggplot(mapping = aes(x=full_specificity,
+                         y=entropy,
+                         color=model))+
+    geom_point()+
+    geom_smooth(method = "lm")
+
+  full_output %>%
+    filter(bg_method == "none" | is.na(bg_method))%>%
+    #filter(n_presence > 20)%>%
+    ggplot(mapping = aes(x=pa_specificity,
+                         y=entropy,
+                         color=model))+
+    geom_point()+
+    geom_smooth(method = "lm")
+
+  full_output %>%
+    filter(bg_method == "none" | is.na(bg_method))%>%
+    filter(n_presence > 20)%>%
+    ggplot(mapping = aes(x=pa_sensitivity,
+                         y=entropy,
+                         color=model))+
+    geom_point()+
+    geom_smooth(method = "lm")
+  
+  
+  full_output %>%
+    filter(bg_method == "none" | is.na(bg_method))%>%
+    filter(n_presence > 20)%>%
+    ggplot(mapping = aes(x=pa_sensitivity,
+                         y=pa_specificity,
+                         color=model))+
+    geom_point()+
+    geom_smooth(method = "lm")
+
+  
+  ci_min =0.25
+  ci_max = 0.75
+  
+  full_output %>%
+    filter(bg_method == "none" | is.na(bg_method))%>%
+    #filter(n_presence > 20)%>%
+    group_by(model)%>%
+    summarise(mean_pa_sens = mean(pa_sensitivity,na.rm = TRUE),
+              ci_high_pa_sens = quantile(pa_sensitivity,probs = ci_max,na.rm = TRUE),
+              ci_low_pa_sens = quantile(pa_sensitivity,probs = ci_min,na.rm = TRUE),
+              mean_pa_spec = mean(pa_specificity,na.rm = TRUE),
+              ci_high_pa_spec = quantile(pa_specificity,probs = ci_max,na.rm = TRUE),
+              ci_low_pa_spec = quantile(pa_specificity,probs = ci_min,na.rm = TRUE))%>%
+    ggplot(mapping = aes(x=mean_pa_sens,y=mean_pa_spec,color=model))+
+    geom_point()+
+    geom_errorbar(mapping = aes(ymin=ci_low_pa_spec,
+                                ymax = ci_high_pa_spec))+
+    geom_errorbarh(mapping = aes(xmin=ci_low_pa_sens,
+                                xmax = ci_high_pa_sens))+
+    xlab("Sensitivty (P/A)")+
+    ylab("Specificity (P/A)")+
+    theme_bw()
+    
+  
+  
+    

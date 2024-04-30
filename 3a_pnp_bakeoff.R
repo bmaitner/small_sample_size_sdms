@@ -32,22 +32,22 @@ library(tidyverse)
 
   rm(full_output_dr)
 
-# Load and format cv data
-  
-  tempfile_fold <- "outputs/temp_bakeoff_output_fold.rds"
-  tempfile_fold_dr <- "outputs/temp_bakeoff_output_fold_dr.rds"
-  
-  fold_output <- readRDS(tempfile_fold)
-  fold_output_dr <- readRDS(tempfile_fold_dr)
-  
-  fold_output_dr %>%
-    bind_rows(fold_output) -> fold_output
-  
-  fold_output %>%
-    mutate(model = case_when(!is.na(ratio_method) ~ ratio_method,
-                             is.na(ratio_method) ~ paste(pres_method, "/", bg_method))) -> fold_output
-  
-  rm(fold_output_dr)
+# # Load and format cv data
+#   
+#   tempfile_fold <- "outputs/temp_bakeoff_output_fold.rds"
+#   tempfile_fold_dr <- "outputs/temp_bakeoff_output_fold_dr.rds"
+#   
+#   fold_output <- readRDS(tempfile_fold)
+#   fold_output_dr <- readRDS(tempfile_fold_dr)
+#   
+#   fold_output_dr %>%
+#     bind_rows(fold_output) -> fold_output
+#   
+#   fold_output %>%
+#     mutate(model = case_when(!is.na(ratio_method) ~ ratio_method,
+#                              is.na(ratio_method) ~ paste(pres_method, "/", bg_method))) -> fold_output
+#   
+#   rm(fold_output_dr)
   
   
   
@@ -247,8 +247,7 @@ library(tidyverse)
     betareg(data = full_output %>%
               filter(!is.na(pres_method))%>%
               mutate(n_presence = log10(n_presence))%>%
-              filter(!pres_method %in% c("vine","lobagoc"),
-                     !bg_method %in% c("lobagoc","vine")) %>%
+              filter(!bg_method %in% c("lobagoc")) %>%
               dplyr::select(pa_AUC,pres_method,bg_method,n_presence)%>%
               na.omit() %>%
               unique(),
@@ -262,8 +261,7 @@ library(tidyverse)
     glmmTMB(data = full_output %>%
               filter(!is.na(pres_method))%>%
               mutate(n_presence = log10(n_presence))%>%
-              filter(!pres_method %in% c("vine","lobagoc"),
-                     !bg_method %in% c("lobagoc","vine")) %>%
+              filter(!bg_method %in% c("lobagoc")) %>%
               dplyr::select(pa_AUC,pres_method,bg_method,n_presence)%>%
               na.omit() %>%
               unique(),
@@ -272,7 +270,7 @@ library(tidyverse)
             + pres_method*bg_method,
             family = beta_family()) -> AUC_model_alt
 
-    #pseudor2 = ~.15
+    #pseudor2 = ~.11
 
     summary(AUC_model)
 
@@ -293,9 +291,9 @@ library(tidyverse)
             mutate(n_presence = log10(n_presence)) %>%
           rowwise()%>%
           mutate(n_pa_pts_total = sum(n_pa_absence+n_pa_presence))%>%
-          filter(!pres_method %in% c("vine", "lobagoc"),
-                 !bg_method %in% c("lobagoc", "vine")) %>%
-          dplyr::select(pa_sensitivity,pres_method,bg_method,n_presence,n_pa_pts_total,species)%>%
+          # filter(!pres_method %in% c("vine", "lobagoc"),
+          #        !bg_method %in% c("lobagoc", "vine")) %>%
+           dplyr::select(pa_sensitivity,pres_method,bg_method,n_presence,n_pa_pts_total,species)%>%
           na.omit() %>%
           unique(),
         formula = pa_sensitivity ~ pres_method + bg_method + n_presence
@@ -322,9 +320,9 @@ library(tidyverse)
           mutate(n_presence = log10(n_presence))%>%
           rowwise()%>%
           mutate(n_pa_pts_total = sum(n_pa_absence+n_pa_presence))%>%
-          filter(!pres_method %in% c("vine","lobagoc"),
-                 !bg_method %in% c("lobagoc","vine")) %>%
-          dplyr::select(pa_specificity,pres_method,bg_method,n_presence,n_pa_pts_total)%>%
+          # filter(!pres_method %in% c("vine","lobagoc"),
+          #        !bg_method %in% c("lobagoc","vine")) %>%
+           dplyr::select(pa_specificity,pres_method,bg_method,n_presence,n_pa_pts_total)%>%
           na.omit() %>%
           unique(),
         formula = pa_specificity ~ pres_method + bg_method + n_presence
@@ -379,7 +377,7 @@ library(tidyverse)
             colour = "grey"
           )+
           geom_vline(
-            aes(xintercept =  stage(factor, after_scale = 3.5)),
+            aes(xintercept =  stage(factor, after_scale = 5.5)),
             colour = "grey"
           ) -> marginals_plot
         
@@ -409,13 +407,24 @@ library(tidyverse)
         theme_bw()+
         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
         geom_vline(
-          aes(xintercept =  stage(model, after_scale = 4.5)),
+          aes(xintercept =  stage(model, after_scale = 6.5)),
           colour = "grey"
         )+
         geom_vline(
-          aes(xintercept =  stage(model, after_scale = 8.5)),
+          aes(xintercept =  stage(model, after_scale = 12.5)),
           colour = "grey"
         ) +
+        
+        geom_vline(
+          aes(xintercept =  stage(model, after_scale = 18.5)),
+          colour = "grey"
+        ) +
+        geom_vline(
+          aes(xintercept =  stage(model, after_scale = 24.5)),
+          colour = "grey"
+        ) +
+        
+        
         ylab(NULL) +
         xlab("Model") -> interactions_plot
 
@@ -427,5 +436,292 @@ library(tidyverse)
              width = 10,height = 6,units = "in",dpi = 600)
       
             
+##################
+      
+      full_output %>%
+        filter(n_presence < 20)%>%
+        filter(!is.na(pres_method) & !is.na(bg_method))%>%
+        mutate(type = case_when(pres_method == bg_method ~ "homotypic",
+                                pres_method != bg_method ~ "heterotypic"))%>%
+          mutate(type = case_when(bg_method == "none" ~ "presence only",
+                                  bg_method != "none" ~ type))%>%
+        group_by(model)%>%
+          ggplot(mapping = aes(x=type,y=pa_AUC,fill=bg_method))+
+        geom_boxplot()+
+        #geom_violin()+
+        geom_vline(
+          aes(xintercept =  stage(type, after_scale = 1.5)),
+          colour = "grey"
+        )+
+        geom_vline(
+          aes(xintercept =  stage(type, after_scale = 2.5)),
+          colour = "grey"
+        )+
+        facet_wrap(~pres_method,scales = "free_y",nrow = 1)
         
-        # Anova of homotypic vs heterotypic models in general? Or t-test?
+
+##################################################################
+      
+        
+##############
+      
+      
+      # Mann-Whitney test for comparison of aucs with maxnet (doesn't require a gaussian dist)
+      
+      for(i in 1:length(unique(full_output$model))){
+        
+        model_i <- unique(full_output$model)[i]
+        
+        
+        data_x <- full_output %>%
+          filter(model == model_i) %>%
+          pull(pa_AUC)
+        
+        data_y <- full_output %>%
+          filter(model=="maxnet") %>%
+          pull(pa_AUC)
+        
+        ti <-tryCatch(wilcox.test(x = data_x,
+                                  y = data_y),
+                      error=function(e){e})
+        
+        
+        if(inherits(ti,"error")){
+          ti$p.value <- NA
+          ti$statistic <- NA
+        }
+        
+        out_i <- data.frame(model = model_i,
+                            comparison = "maxnet",
+                            pval = ti$p.value,
+                            W = ti$statistic,
+                            comparison_w_maxnet  = mean(data_x,na.rm = TRUE) - mean(data_y,na.rm = TRUE))
+        
+        
+        
+        if(i==1){ttest_out <- out_i}else(ttest_out <- bind_rows(ttest_out,out_i))
+        
+        rm(out_i)
+        
+      }
+      
+      ttest_out %>%
+        mutate(signif = pval <= 0.05) -> models_v_maxent
+      
+      models_v_maxent %>%
+        filter(!signif)%>%
+        pull(model) -> all_sample_comparable_to_maxnet
+      
+      # small sample species t-test vs maxent
+      
+      for(i in 1:length(unique(full_output$model))){
+        
+        model_i <- unique(full_output$model)[i]
+        
+        data_x <- full_output %>%
+          filter(n_presence <= 20) %>%
+          filter(model==model_i)%>%
+          pull(pa_AUC)
+        
+        data_y <- full_output %>%
+          filter(n_presence <= 20) %>%
+          filter(model=="maxnet")%>%
+          pull(pa_AUC)
+        
+        ti <-tryCatch(wilcox.test(x = data_x,
+                                  y = data_y),
+                      error = function(e){e})
+        
+        if(inherits(ti,"error")){
+          ti$p.value <- NA
+          ti$statistic <- NA
+          
+        }
+        
+        out_i <- data.frame(model = model_i,
+                            comparison = "maxnet",
+                            pval = ti$p.value,
+                            W = ti$statistic,
+                            comparison_w_maxnet  = mean(data_x,na.rm = TRUE) - mean(data_y,na.rm = TRUE))
+        
+        if(i==1){ttest_small_out <- out_i}else(ttest_small_out <- bind_rows(ttest_small_out,out_i))
+        
+        
+        
+        rm(out_i)
+        
+      }
+      
+      ttest_small_out %>%
+        mutate(signif = pval <= 0.05) -> small_samples_models_v_maxent
+      
+      small_samples_models_v_maxent %>%
+        filter(!signif) %>%
+        pull(model) -> small_sample_comparable_to_maxnet
+      
+      small_samples_models_v_maxent %>%
+        select(model,W,pval) %>%
+        arrange(-pval)%>%
+        write.csv(file = "tables/small_sample_size_comparison_to_maxnet.csv",
+                  row.names = FALSE)
+      
+##################
+  
+  # PLotting overall models that are comparable to maxnet
+
+      #Overall comparison
+      
+      full_output %>%
+        mutate(model = factor(model,
+                              levels = full_output %>%
+                                group_by(model) %>%
+                                summarize(sm = mean(pa_sensitivity,na.rm = TRUE))%>%
+                                arrange(sm) %>%
+                                pull(model))) %>%
+        filter(model %in% all_sample_comparable_to_maxnet ) %>%
+        select(model,pa_AUC,pa_specificity,pa_sensitivity) %>%
+        pivot_longer(contains("pa_"),names_to = "metric") %>%
+        mutate(metric = gsub(pattern = "pa_",replacement = "",x =metric))%>%
+        ggplot(mapping = aes(x=model,y=value))+
+        geom_boxplot(notch = TRUE)+ #notch conveys additional info on median
+        #geom_violin()+
+        facet_wrap(~ metric,
+                   ncol = 1,
+                   scales = "free_y")+
+        theme_bw()+
+        theme(axis.text.x = element_text(size = 12),
+              axis.text.y = element_text(size = 12),
+              strip.text.x = element_text(size = 12))+
+        xlab(NULL)+
+        ylab(NULL)-> maxent_comparable_models_plot
+      
+      maxent_comparable_models_plot
+      
+      ggsave(plot = maxent_comparable_models_plot,
+             filename = "figures/maxent_comparable_models_plot.svg",
+             width = 10,height = 6,units = "in",dpi = 600)
+      
+      ggsave(plot = maxent_comparable_models_plot,
+             filename = "figures/maxent_comparable_models_plot.jpg",
+             width = 10,height = 6,units = "in",dpi = 600)
+      
+#################
+  
+# How many species with 20 or fewer records?
+      
+full_output %>%
+        select(species,n_presence)%>%
+        unique()%>%
+        filter(n_presence <= 20) %>%
+        summarise(n=n())
+      
+# How many species with more than 100 records?
+      
+      full_output %>%
+        select(species,n_presence)%>%
+        unique()%>%
+        filter(n_presence > 100) %>%
+        summarise(n=n())
+      
+      85*3*10
+      
+##########################################      
+
+  # Model performance vs model type    
+
+      
+      full_output %>%
+        filter(!is.na(bg_method)) %>%
+        select(model,
+               pres_method,
+               bg_method,
+               pa_AUC,
+               pa_sensitivity,
+               pa_specificity)%>%
+        pivot_longer(cols = contains("pa_"),
+                     names_to = "metric") %>%
+        mutate(metric = gsub(pattern = "pa_",replacement = "",x=metric)) %>%
+        # group_by(model,pres_method,bg_method,metric) %>%
+        # summarise(mean_value = mean(value,na.rm = TRUE),
+        #           ci_low = quantile(x=value, probs = 0.25,na.rm = TRUE),
+        #           ci_high = quantile(x=value, probs = 0.75,na.rm = TRUE)) %>%
+        ggplot(mapping = aes(y=value, x=model))+
+        geom_hline(data = full_output %>%
+                     filter(model == "maxnet") %>%
+                     select(model,
+                            pa_AUC,
+                            pa_sensitivity,
+                            pa_specificity)%>%
+                     pivot_longer(cols = contains("pa_"),
+                                  names_to = "metric") %>%
+                     mutate(metric = gsub(pattern = "pa_",replacement = "",x=metric))%>%
+                     group_by(model,metric)%>%
+                     summarise(median = median(value,na.rm = TRUE)),
+                   mapping = aes(yintercept = median),
+                   lty = 2,color = "black"
+        )+
+        geom_boxplot(mapping = aes(color = pres_method),
+                     notch = TRUE,
+                     na.rm = TRUE,
+                     fill="transparent",show.legend = FALSE)+
+        facet_wrap(~ metric,ncol = 1
+                   #,scales = "free_y"
+                   )+
+        theme_bw()+
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+        geom_vline(
+          aes(xintercept =  stage(model, after_scale = 6.5)),
+          colour = "grey"
+        )+
+        geom_vline(
+          aes(xintercept =  stage(model, after_scale = 12.5)),
+          colour = "grey"
+        )+
+        geom_vline(
+          aes(xintercept =  stage(model, after_scale = 18.5)),
+          colour = "grey"
+        )+
+        geom_vline(
+          aes(xintercept =  stage(model, after_scale = 24.5)),
+          colour = "grey"
+        )+
+        xlab(NULL)+
+        ylab(NULL) -> pb_performance
+
+      pb_performance
+              
+      ggsave(plot = pb_performance,
+             filename = "figures/pb_performance_plot.svg",
+             width = 10,
+             height = 6,
+             units = "in",
+             dpi = 600)
+      
+      ggsave(plot = pb_performance,
+             filename = "figures/pb_performance_plot.jpg",
+             width = 10,
+             height = 6,
+             units = "in",
+             dpi = 600)
+      
+###################################
+      
+    # Table of best performance by model type
+      
+  full_output %>%
+        group_by(species) %>%
+        mutate(max_pa_AUC = max(pa_AUC,na.rm = TRUE)) %>%
+        ungroup() %>%
+        select(model,species,pa_AUC,max_pa_AUC) %>%
+        arrange(species) %>%
+        filter(max_pa_AUC == pa_AUC) %>%
+        unique() %>%
+        group_by(model) %>%
+        summarise(times_won = n()) %>%
+        arrange(-times_won)
+      
+
+  length(unique(full_output$species))#226 species
+      
+
+              

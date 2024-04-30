@@ -13,12 +13,15 @@ library(sf)
 library(DescTools)
 library(foreach)
 library(doParallel)
-source("R/evaluate_disdat.R")
+source("R/evaluate_disdat_ensemble.R")
 
 
 # Select models to use in ensemble
 
   model_vector <- c("maxnet","rulsif","kde/kde")
 
-# set threshold 
 
+  ensemble_performance <- evaluate_ensemble_disdat(model_vector = model_vector,
+                         quantile = 0.05,
+                         verbose = TRUE,
+                         ncl = 5)
