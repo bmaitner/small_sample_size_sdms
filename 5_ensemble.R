@@ -20,6 +20,7 @@ source("R/evaluate_disdat_ensemble.R")
 
   model_vector <- c("maxnet","rulsif","kde/kde")
 
+# Get ensemble performance data
 
   ensemble_performance <- evaluate_ensemble_disdat(model_vector = model_vector,
                          quantile = 0.05,
