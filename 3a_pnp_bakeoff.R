@@ -718,10 +718,24 @@ full_output %>%
         unique() %>%
         group_by(model) %>%
         summarise(times_won = n()) %>%
+        mutate(pct_won = times_won/length(unique(full_output$species))*100)%>%
         arrange(-times_won)
-      
 
-  length(unique(full_output$species))#226 species
       
-
+# Table of best performance by model type, small sample size
+      
+      
+      full_output %>%
+        filter(n_presence <= 20) %>%
+        group_by(species) %>%
+        mutate(max_pa_AUC = max(pa_AUC,na.rm = TRUE)) %>%
+        ungroup() %>%
+        select(model,species,pa_AUC,max_pa_AUC) %>%
+        arrange(species) %>%
+        filter(max_pa_AUC == pa_AUC) %>%
+        unique() %>%
+        group_by(model) %>%
+        summarise(times_won = n()) %>%
+        mutate(pct_won = times_won/length(unique(full_output$species))*100)%>%
+        arrange(-times_won)
               
