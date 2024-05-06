@@ -8,7 +8,8 @@
 evaluate_ensemble_disdat <- function(model_vector = NULL,
                             quantile = 0.05,
                             verbose = TRUE,
-                            ncl=5){
+                            ncl=5,
+                            temp_file = "outputs/temp_ensemble_eval.RDS"){
 
   regions <- c("AWT", "CAN", "NSW", "NZ", "SA", "SWI")
   
@@ -25,7 +26,6 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
     data_i <- disData(region = region_i)
     
     if(verbose){message(paste("Starting region ",i, " of ", length(regions),": ",region_i))}
-    
 
     #Remove categorical predictors  
     
@@ -83,8 +83,6 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
       
         bg_means <- colMeans(background_s[,7:ncol(background_s)])
         bg_sd <- apply(X = background_s[,7:ncol(background_s)],MARGIN = 2,FUN = sd)
-        
-      
 
         presence_s[,7:ncol(presence_s)] <-
         pbsdm:::rescale_w_objects(data = presence_s[,7:ncol(presence_s)],
@@ -283,7 +281,8 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
                   training_predictions <- list()
                   testing_predictions <- list()
                 
-                for(m in 1:length(model_vector)){
+                  
+                for(m in 1:length(model_fold)){
                   
                   if("ratio" %in% names(model_fold[[m]])){
                     
@@ -580,9 +579,7 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
                        ) #renaming to prevent issues with having the same variable name in environment and dataframe
                        
                      }#end fold
-      
-      
-      
+
       #Fit full model  
 
       time_start <- Sys.time()              
@@ -627,13 +624,13 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
       
       model_time_full <- time_finish - time_start
       
-      #convert model time to seconds if needed
+      # convert model time to seconds if needed
       
-      if(units(model_time_full) != "secs"){ units(model_time_full) <- "secs" }
-      
-      if(units(model_time_full) != "secs"){stop("Model time units not seconds")}
-      
-      model_time_full <- as.numeric(model_time_full)
+        if(units(model_time_full) != "secs"){ units(model_time_full) <- "secs" }
+        
+        if(units(model_time_full) != "secs"){stop("Model time units not seconds")}
+        
+        model_time_full <- as.numeric(model_time_full)
       
       # Full model projections
       
@@ -642,7 +639,9 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
       
       full_predictions <- list()
 
-      for(m in 1:length(model_vector)){
+      for(m in 1:length(model_full)){
+        
+        if(is.null(model_full[[m]])){next}
         
         if("ratio" %in% names(model_full[[m]])){
           
@@ -656,12 +655,13 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
 
         }
         
-      }#m loop for eval
+      } # m loop for eval
 
       
     # Make mean suitability score (re-scale relative suitability first)
 
       full_predictions <- full_predictions %>%
+        discard(is.null) %>%
         as.data.frame() %>%
         `colnames<-`(NULL)
       
@@ -773,7 +773,7 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
             
         pa_predictions <- list()
         
-        for(m in 1:length(model_vector)){
+        for(m in 1:length(model_full)){
           
           if("ratio" %in% names(model_full[[m]])){
             
@@ -975,6 +975,12 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
                                   data.frame(species = species_s, out_full))
         fold_model_stats <- rbind(fold_model_stats,
                                   data.frame(species = species_s, out))
+        
+        saveRDS(object = list(full_model_stats = full_model_stats,
+                              fold_model_stats = fold_model_stats),
+                file = temp_file)
+        
+        
       
 
     }#s loop
