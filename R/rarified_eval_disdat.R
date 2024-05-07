@@ -220,6 +220,7 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
                     full_model_stats$rep == replicate)){
                   
                   message("Skipping this species/model/n presences/replicate")
+                  
                   next
                   
                 }
@@ -329,9 +330,6 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
                                    
                                  }
                                  
-                                 
-                                 
-                                 
                                  #if the fold model couldn't be fit, skip it (NA's will indicate this happened)
                                  
                                  if(is.null(model_fold)){
@@ -380,6 +378,22 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
                                    
                                    
                                  }
+                                 
+                                 # if training or testing predictions are all NULL, skip (NA's will indicate this happened)
+
+                                 if(all(is.na(testing_predictions)) |
+                                    all(is.na(training_predictions))){
+
+                                   return(out %>%
+                                            rename(fold_temp = fold) %>%
+                                            filter(fold_temp == fold) %>%
+                                            rename(fold = fold_temp)
+                                   ) #renaming to prevent issues with having the same variable name in environment and dataframe
+                                   
+                                 }
+                                 
+                                 
+                                 
                                  
                                  
                                  # Get entropy
@@ -634,6 +648,30 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
                     
                   }
                   
+                
+                    
+                if(all(is.na(full_predictions))){
+                  
+                  out_full$n_background <- nrow(background_s[,7:ncol(background_s)])
+                  out_full$n_presence <- nrow(presence_s[,7:ncol(presence_s)])
+                  out_full$n_pa_absence <- length(data_i$pa$pa[which(data_i$pa$spid == species & data_i$pa$pa == 0)])
+                  out_full$n_pa_presence <- length(data_i$pa$pa[which(data_i$pa$spid == species & data_i$pa$pa == 1)])
+                  out_full$runtime <- runtime[3]
+                  
+                  
+                  full_model_stats <- rbind(full_model_stats,
+                                            data.frame(species = species,
+                                                       model = model, out_full))
+                  
+                  saveRDS(object = full_model_stats,file = temp_full_RDS)
+                  saveRDS(object = fold_model_stats,file = temp_fold_RDS)
+                  
+                  
+                 next 
+                  
+                } # end "if predictions are all NAs"
+
+                  
                   # Get entropy
                   
                   # setup needed files
@@ -671,7 +709,9 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
                                               rep(0,nrow(background_s))))
                   
                   full_roc_obj <- pROC::roc(response = full_suitability_v_occurrence$occurrence,
-                                            predictor = full_suitability_v_occurrence$suitability)
+                                            predictor = full_suitability_v_occurrence$suitability,
+                                            level = c(0,1),
+                                            direction = "<")
                   
                   
                   
