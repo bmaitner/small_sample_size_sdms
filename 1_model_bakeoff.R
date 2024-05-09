@@ -121,7 +121,7 @@ full_model_outputs <- readRDS("outputs/bake_off_pnp_full_model_outputs.RDS")
 library(ggplot2)  
 ##################################
 
-dr_models_to_evaluate <- c("ulsif","rulsif","maxnet")
+dr_models_to_evaluate <- c("ulsif","rulsif","maxnet","CVmaxnet")
 
 # Iterate through models
 
