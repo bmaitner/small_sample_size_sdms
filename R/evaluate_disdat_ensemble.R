@@ -19,6 +19,14 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
   cl <- makeCluster(ncl)
   registerDoParallel(cl)
   
+  if(file.exists(temp_file)){
+    
+    full_model_stats <- readRDS(temp_file)$full_model_stats
+    fold_model_stats <- readRDS(temp_file)$fold_model_stats
+    
+    
+    }
+  
   for (i in 1:length(regions)){
     
     region_i <- regions[i]
@@ -69,6 +77,13 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
       out <- NULL  
       
       species_s <- unique(data_i$po$spid)[s]
+      
+    # Skip the species if its already been done  
+      
+      if(species_s %in% full_model_stats$species &
+         species_s %in% fold_model_stats$species){
+        next
+        }
           
       if(verbose){message(paste("Starting species ",s, " of ",
                                 length(unique(data_i$po$spid)),": ",species_s))
@@ -178,6 +193,8 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
                              entropy = NA)
       
       
+      if(verbose){message("Starting CV")}
+      
       out <- foreach(fold = 1:length(unique(presence_data$fold)),
                      .packages = c("pbsdm","tidyverse","DescTools"),
                      .combine = "rbind") %dopar% {
@@ -196,7 +213,7 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
                        #This if statement skips cross validation if there is only one fold
                        
                        if(length(unique(presence_data$fold)) == 1){
-                         print("Skipping cross validation, only one fold")
+                         message("Skipping cross validation, only one fold")
                          return(out)
                          
                        }
@@ -242,7 +259,7 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
                          }
                          
                          
-                       }
+                       } #m models loop end
                        
                        time_finish <- Sys.time()
                        
@@ -280,7 +297,14 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
                        
                   training_predictions <- list()
                   testing_predictions <- list()
-                
+                  
+            # Toss parts of model fold that weren't fitted
+                  
+                  
+                  model_fold <-
+                  model_fold %>%
+                    discard(is.null)
+
                   
                 for(m in 1:length(model_fold)){
                   
@@ -304,7 +328,7 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
 
                 }#m loop for eval
 
-            # end evaluate models           
+            # end evaluate models
                   
                   training_predictions <- training_predictions %>%
                     as.data.frame() %>%
@@ -315,7 +339,7 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
                     `colnames<-`(NULL)
                     
                   training_mean_vector = colMeans(training_predictions)
-                  training_sd_vector =apply(X = training_predictions,MARGIN = 2,FUN = sd)
+                  training_sd_vector = apply(X = training_predictions,MARGIN = 2,FUN = sd)
                   
                   mean_testing_predictions <-
                   testing_predictions %>%
@@ -404,7 +428,7 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
 
                        # Code to make testing suitability scores binary
                        
-                       threshold <- stats::quantile(x = fold_training_suitability_v_occurrence$suitability[which(fold_training_suitability_v_occurrence$occurrence==1)],
+                       fold_threshold <- stats::quantile(x = fold_training_suitability_v_occurrence$suitability[which(fold_training_suitability_v_occurrence$occurrence==1)],
                                                     probs = quantile,
                                                     na.rm = T)
                        
@@ -498,16 +522,16 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
                        
                       # Anything greater than suitability threshold is considered a presence  
                        
-                       TP <- length(which(fold_testing_suitability_v_occurrence$suitability >= threshold &
+                       TP <- length(which(fold_testing_suitability_v_occurrence$suitability >= fold_threshold &
                                             fold_testing_suitability_v_occurrence$occurrence == 1))
                        
-                       FN <- length(which(fold_testing_suitability_v_occurrence$suitability < threshold &
+                       FN <- length(which(fold_testing_suitability_v_occurrence$suitability < fold_threshold &
                                             fold_testing_suitability_v_occurrence$occurrence == 1))
                        
-                       TN <- length(which(fold_testing_suitability_v_occurrence$suitability < threshold &
+                       TN <- length(which(fold_testing_suitability_v_occurrence$suitability < fold_threshold &
                                             fold_testing_suitability_v_occurrence$occurrence == 0))
                        
-                       FP <- length(which(fold_testing_suitability_v_occurrence$suitability >= threshold &
+                       FP <- length(which(fold_testing_suitability_v_occurrence$suitability >= fold_threshold &
                                             fold_testing_suitability_v_occurrence$occurrence == 0))
                        
                        # votes: Anything greater than suitability threshold is considered a presence  
@@ -515,13 +539,13 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
                        vote_TP <- length(which(testing_vote_suitability_out >= vote_threshold &
                                             fold_testing_suitability_v_occurrence$occurrence == 1))
                        
-                       vote_FN <- length(which(testing_vote_suitability_out < threshold &
+                       vote_FN <- length(which(testing_vote_suitability_out < vote_threshold &
                                             fold_testing_suitability_v_occurrence$occurrence == 1))
                        
-                       vote_TN <- length(which(testing_vote_suitability_out < threshold &
+                       vote_TN <- length(which(testing_vote_suitability_out < vote_threshold &
                                             fold_testing_suitability_v_occurrence$occurrence == 0))
                        
-                       vote_FP <- length(which(testing_vote_suitability_out >= threshold &
+                       vote_FP <- length(which(testing_vote_suitability_out >= vote_threshold &
                                             fold_testing_suitability_v_occurrence$occurrence == 0)) 
                        
                        
@@ -580,8 +604,10 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
                        
                      }#end fold
 
-      #Fit full model  
+      #Fit full model
 
+      if(verbose){message("Starting full model fit")}
+      
       time_start <- Sys.time()              
       
       model_full <- list()
@@ -634,10 +660,19 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
       
       # Full model projections
       
+      if(verbose){message("Starting full model projections")}
+        
       full_data <- rbind(presence_s[,7:ncol(presence_s)],
                          background_s[,7:ncol(background_s)])
       
       full_predictions <- list()
+
+      # skip species if no models could be fit
+      
+      if(length(model_full)==0){
+        message("Skipping model, was not fit")
+        next
+        }
 
       for(m in 1:length(model_full)){
         
@@ -716,22 +751,22 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
       
       #Evaluate the full model with full model data
       
-        threshold <- stats::quantile(x = full_suitability_v_occurrence$suitability[which(full_suitability_v_occurrence$occurrence==1)],
+        full_threshold <- stats::quantile(x = full_suitability_v_occurrence$suitability[which(full_suitability_v_occurrence$occurrence==1)],
                                      probs = quantile,
                                      na.rm = T)
       
         #Anything greater than suitability threshold is considered a presence  
           
-          TP <- length(which(full_suitability_v_occurrence$suitability >= threshold &
+          TP <- length(which(full_suitability_v_occurrence$suitability >= full_threshold &
                                full_suitability_v_occurrence$occurrence == 1))
           
-          FN <- length(which(full_suitability_v_occurrence$suitability < threshold &
+          FN <- length(which(full_suitability_v_occurrence$suitability < full_threshold &
                                full_suitability_v_occurrence$occurrence == 1))
           
-          TN <- length(which(full_suitability_v_occurrence$suitability < threshold &
+          TN <- length(which(full_suitability_v_occurrence$suitability < full_threshold &
                                full_suitability_v_occurrence$occurrence == 0))
           
-          FP <- length(which(full_suitability_v_occurrence$suitability >= threshold &
+          FP <- length(which(full_suitability_v_occurrence$suitability >= full_threshold &
                                full_suitability_v_occurrence$occurrence == 0))
           
         
@@ -771,9 +806,15 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
 
       #Estimate suitabilities for PA data
             
+        if(verbose){message("Starting estimation of PA ROR")}
+        
         pa_predictions <- list()
         
         for(m in 1:length(model_full)){
+          
+          
+          if(is.null(model_full[[m]])){next}
+          
           
           if("ratio" %in% names(model_full[[m]])){
             
@@ -793,6 +834,7 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
         # Make mean suitability score (re-scale relative suitability first)
             
             pa_predictions <- pa_predictions %>%
+              discard(is.null) %>%
               as.data.frame() %>%
               `colnames<-`(NULL)
             
@@ -802,8 +844,8 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
             
             mean_pa_predictions <-
               pa_predictions %>%
-              pbsdm:::rescale_w_objects(mean_vector = pa_mean_vector,
-                                        sd_vector = pa_sd_vector) %>%
+              pbsdm:::rescale_w_objects(mean_vector = full_mean_vector,
+                                        sd_vector = full_sd_vector) %>%
               rowMeans(na.rm = TRUE)
             
             pa_suitability_v_occurrence <- 
@@ -847,23 +889,22 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
       
       #For this one, we set the threshold based on the full model using presence and background
       
-      
-        threshold <- stats::quantile(x = full_suitability_v_occurrence$suitability[which(full_suitability_v_occurrence$occurrence==1)],
+        full_threshold <- stats::quantile(x = full_suitability_v_occurrence$suitability[which(full_suitability_v_occurrence$occurrence==1)],
                                      probs = quantile,
                                      na.rm = T)
-      
+        
       #Anything greater than suitability threshold is considered a presence  
       
-        TP <- length(which(pa_suitability_v_occurrence$suitability >= threshold &
+        TP <- length(which(pa_suitability_v_occurrence$suitability >= full_threshold &
                              pa_suitability_v_occurrence$occurrence == 1))
         
-        FN <- length(which(pa_suitability_v_occurrence$suitability < threshold &
+        FN <- length(which(pa_suitability_v_occurrence$suitability < full_threshold &
                              pa_suitability_v_occurrence$occurrence == 1))
         
-        TN <- length(which(pa_suitability_v_occurrence$suitability < threshold &
+        TN <- length(which(pa_suitability_v_occurrence$suitability < full_threshold &
                              pa_suitability_v_occurrence$occurrence == 0))
         
-        FP <- length(which(pa_suitability_v_occurrence$suitability >= threshold &
+        FP <- length(which(pa_suitability_v_occurrence$suitability >= full_threshold &
                              pa_suitability_v_occurrence$occurrence == 0))
       
         out_full$pa_sensitivity <- TP / (TP + FN)
@@ -888,7 +929,9 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
       # code to evaluate model uncertainty via votes.
         # will consider two extremes: 1) any, 2) all
         
-        full_vote_suitability_out <- NULL
+        if(verbose){message("Starting evaluation with any votes")}
+        
+        pa_all_vote_suitability_out <- NULL
         
         for(r in 1:ncol(full_predictions)){
           
@@ -897,13 +940,13 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
                                          na.rm = T)
           if(r==1){
             
-            full_vote_suitability_out <- (full_predictions[,r] >= threshold_r) %>%
+            pa_all_vote_suitability_out <- (pa_predictions[,r] >= threshold_r) %>%
               as.numeric()
             
             
           }else{
             
-            full_vote_suitability_out <- full_vote_suitability_out +(full_predictions[,r] >= threshold_r) %>%
+            pa_all_vote_suitability_out <- pa_all_vote_suitability_out +(pa_predictions[,r] >= threshold_r) %>%
               as.numeric()
             
           }
@@ -912,16 +955,16 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
       # any models  
         
         
-        TP <- length(which(pa_suitability_v_occurrence$suitability >= 1 &
+        TP <- length(which(pa_all_vote_suitability_out >= 1 &
                              pa_suitability_v_occurrence$occurrence == 1))
         
-        FN <- length(which(pa_suitability_v_occurrence$suitability < 1 &
+        FN <- length(which(pa_all_vote_suitability_out < 1 &
                              pa_suitability_v_occurrence$occurrence == 1))
         
-        TN <- length(which(pa_suitability_v_occurrence$suitability < 1 &
+        TN <- length(which(pa_all_vote_suitability_out < 1 &
                              pa_suitability_v_occurrence$occurrence == 0))
         
-        FP <- length(which(pa_suitability_v_occurrence$suitability >= 1 &
+        FP <- length(which(pa_all_vote_suitability_out >= 1 &
                              pa_suitability_v_occurrence$occurrence == 0))
         
         out_full$pa_any_vote_sensitivity <- TP / (TP + FN)
@@ -939,18 +982,19 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
         
       # all models  
         
+        if(verbose){message("Starting evaluation with all votes")}
+
         
-        
-        TP <- length(which(pa_suitability_v_occurrence$suitability >= ncol(full_predictions) &
+        TP <- length(which(pa_all_vote_suitability_out >= ncol(full_predictions) &
                              pa_suitability_v_occurrence$occurrence == 1))
         
-        FN <- length(which(pa_suitability_v_occurrence$suitability < ncol(full_predictions) &
+        FN <- length(which(pa_all_vote_suitability_out < ncol(full_predictions) &
                              pa_suitability_v_occurrence$occurrence == 1))
         
-        TN <- length(which(pa_suitability_v_occurrence$suitability < ncol(full_predictions) &
+        TN <- length(which(pa_all_vote_suitability_out < ncol(full_predictions) &
                              pa_suitability_v_occurrence$occurrence == 0))
         
-        FP <- length(which(pa_suitability_v_occurrence$suitability >= ncol(full_predictions) &
+        FP <- length(which(pa_all_vote_suitability_out >= ncol(full_predictions) &
                              pa_suitability_v_occurrence$occurrence == 0))
         
         out_full$pa_all_vote_sensitivity <- TP / (TP + FN)

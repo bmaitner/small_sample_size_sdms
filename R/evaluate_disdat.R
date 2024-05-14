@@ -409,7 +409,7 @@ evaluate_disdat <- function(presence_method = NULL,
                        
                        # Code to make testing suitability scores binary
                        
-                       threshold <- stats::quantile(x = fold_testing_suitability_v_occurrence$suitability[which(fold_testing_suitability_v_occurrence$occurrence==1)],
+                       threshold <- stats::quantile(x = fold_training_suitability_v_occurrence$suitability[which(fold_training_suitability_v_occurrence$occurrence==1)],
                                                     probs = quantile,
                                                     na.rm = T)
                        
@@ -612,7 +612,7 @@ evaluate_disdat <- function(presence_method = NULL,
       
       #Evaluate the full model with full model data
       
-        threshold <- stats::quantile(x = full_suitability_v_occurrence$suitability[which(full_suitability_v_occurrence$occurrence==1)],
+        threshold <- stats::quantile(x = full_suitability_v_occurrence$suitability[which(full_suitability_v_occurrence$occurrence == 1)],
                                      probs = quantile,
                                      na.rm = T)
       

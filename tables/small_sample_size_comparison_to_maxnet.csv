@@ -1,0 +1,35 @@
+"model","W","pval"
+"maxnet",578,1
+"CVmaxnet",555.5,0.950000047204555
+"rangebagging / rangebagging",974,0.92587648673304
+"rangebagging / none",488,0.773924530423801
+"vine / kde",518,0.745179282435312
+"gaussian / kde",534,0.741268572176908
+"vine / gaussian",516,0.725958591593279
+"rulsif",545,0.692023272997565
+"vine / rangebagging",510,0.669351147268424
+"vine / none",510,0.669351147268424
+"vine / vine",509,0.66008398110869
+"kde / kde",540,0.647596584329815
+"kde / gaussian",536,0.612917051869047
+"gaussian / rangebagging",518,0.596300252423453
+"gaussian / none",517,0.587674598369149
+"kde / rangebagging",533,0.587451948518093
+"kde / none",533,0.587451948518093
+"ulsif",509,0.52081065092559
+"gaussian / gaussian",499,0.443034395579217
+"kde / vine",495,0.413861867774947
+"gaussian / vine",442,0.269072405350363
+"lobagoc / none",340,0.054865401764585
+"lobagoc / gaussian",337,0.0496138226529593
+"lobagoc / vine",334,0.0447844169980554
+"lobagoc / lobagoc",238,0.0393363849189352
+"lobagoc / kde",367,0.0355594343425485
+"rangebagging / kde",351,0.0323118209343094
+"lobagoc / rangebagging",346,0.0271281164705093
+"rangebagging / gaussian",263,0.00126418714597214
+"rangebagging / vine",239,0.000623997016148559
+"rangebagging / lobagoc",NA,NA
+"gaussian / lobagoc",NA,NA
+"kde / lobagoc",NA,NA
+"vine / lobagoc",NA,NA

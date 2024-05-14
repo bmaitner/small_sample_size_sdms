@@ -19,7 +19,8 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
 
   
   # Load files if they exist
-    if(file.exists(temp_fold_RDS)){
+
+      if(file.exists(temp_fold_RDS)){
       
       fold_model_stats <- readRDS(file = temp_fold_RDS)
       
@@ -191,7 +192,9 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
             
               if(verbose){message("starting model ",m, " of ",
                                   length(unique(model_vector)),
-                                  " : ", model)}
+                                  " : ", model," for species ",species,
+                                  " and presence size ",p,
+                                  ", replicate ", replicate)}
               
               
               #Parse the model text
@@ -777,7 +780,9 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
                   
                   
                   pa_roc_obj <- pROC::roc(response = pa_suitability_v_occurrence$occurrence,
-                                          predictor = pa_suitability_v_occurrence$suitability)
+                                          predictor = pa_suitability_v_occurrence$suitability,
+                                          level = c(0,1),
+                                          direction = "<")
                   
                   out_full$pa_pAUC_specificity <- pROC::auc(roc = pa_roc_obj,
                                                             partial.auc = c(.8, 1),
