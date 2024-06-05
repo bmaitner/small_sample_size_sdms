@@ -10,6 +10,9 @@ library(pbsdm)
 library(sf)
 library(terra)
 library(tidyterra)
+library(tidyverse)
+library(DescTools)
+library(ggpmisc)
 
 # Make a temporary directory to store climate data
 
@@ -17,9 +20,9 @@ library(tidyterra)
 
 # Get environmental data
 
-env <- worldclim_global(var = "bio",
-                        res = 5,
-                        path = temp)
+  env <- worldclim_global(var = "bio",
+                          res = 5,
+                          path = temp)
 
 # # Function for occurrence counting
 #   
@@ -87,16 +90,34 @@ env <- worldclim_global(var = "bio",
   # saveRDS(object = all_counts,file = "data/manual_downloads/BIEN_occs/occ_counts.RDS")
 
   all_counts <- readRDS("data/manual_downloads/BIEN_occs/occ_counts.RDS")
+
+  # How many species with 10+ occurrences?
+    
+  all_counts %>%
+    filter(n_occs >= 10)%>%
+    nrow()
+  
+  # What fraction of species with occurrence data have 10+ occs?
+  
+  all_counts %>%
+    filter(n_occs >= 10)%>%
+    nrow()/all_counts %>% nrow()
   
   ssss_counts <- all_counts %>%
-    filter(n_occs <= 20)
+    #filter(n_occs <= 20)
+    filter(n_occs <= 100)
   
+  # 360,000 to 400,000
+  nrow(all_counts)  /360000
+  
+  nrow(all_counts)/  400000
   
   # 221000 species with 20 or fewer observations!!
   
   # grab a subset from Florida
   
-  fl_species <- BIEN_list_state(country = "United States",state = "Florida")
+  fl_species <- BIEN_list_state(country = "United States",
+                                state = "Florida")
   
   ssss_counts %>%
     mutate(species = gsub(pattern = "_",
@@ -143,17 +164,182 @@ source("R/profile_ensemble.R")
     }
     
   }
+  
+  #saveRDS(object = ensemble_profiles,file = "outputs/ensemble_profile_20.RDS")  
+  #ensemble_profiles <- readRDS("outputs/ensemble_profile_20.RDS")
+  
+  #saveRDS(object = ensemble_profiles,file = "outputs/ensemble_profile_100.RDS")  
+  #ensemble_profiles <- readRDS("outputs/ensemble_profile_100.RDS")
     
 # review ensembles
   
-ensemble_profiles %>%
-  ggplot(mapping = aes(x=n_presences,y=vote_entropy))+
-  geom_point()
-  
-head(ensemble_profiles)
+    # how many were modelled?
+        ensemble_profiles %>%
+          filter(!is.na(total_votes)) %>%
+          filter(total_votes > 0) %>%
+          nrow()
 
-ensemble_profiles %>%
-  filter(!is.na(vote_entropy))->test
+        ensemble_profiles %>%
+          filter(!is.na(total_votes)) %>%
+          filter(total_votes > 0) %>%
+          pull(n_presences) %>% min()
+        
+
+
+  ensemble_profiles %>%
+    mutate(`One Vote` = one_vote/total_votes,
+           `Two Votes` = two_votes/total_votes,
+           `Three Votes` = three_votes/total_votes) %>%
+    pivot_longer(cols = c(`One Vote`,`Two Votes`,`Three Votes`),
+                 names_to = "Support",
+                 values_to = "prop") %>%
+    mutate(Support = factor(x=Support,
+                            ordered = TRUE,
+                            levels = c("One Vote","Two Votes","Three Votes"))) %>%
+    ggplot(mapping = aes(x = n_presences,
+                         y = prop,
+                         color=Support)) +
+    geom_point(alpha=0.1)+
+    geom_smooth(method="loess",
+                se = FALSE)+
+    geom_ribbon(data =   . %>%
+                  group_by(n_presences,Support)%>%
+                  summarize(ci_low = quantile(x=prop,probs=0.025, na.rm=TRUE),
+                            ci_high = quantile(x=prop,probs=0.975, na.rm=TRUE)),
+                mapping = aes(ymin=ci_low,ymax=ci_high,x=n_presences,fill=Support),
+                alpha=0.2,
+                inherit.aes = FALSE)+
+    xlab("Occurrence Records")+
+    ylab("Proportion of Predicted Locations")+
+    theme_bw()+
+    scale_color_viridis_d()+
+    scale_x_continuous(expand=c(0,0))+
+    scale_y_continuous(expand=c(0,0))
+    #+geom_hline(yintercept = 0.5,lty=2)
+    #+geom_vline(xintercept = 10,lty=1)
+
+### 
+  
+  # at n = 2, n = 100 what is the vote breakdown?
+  
+  ensemble_profiles %>%
+    mutate(`One Vote` = one_vote/total_votes,
+           `Two Votes` = two_votes/total_votes,
+           `Three Votes` = three_votes/total_votes) %>%
+    pivot_longer(cols = c(`One Vote`,`Two Votes`,`Three Votes`),
+                 names_to = "Support",
+                 values_to = "prop") %>%
+    mutate(Support = factor(x=Support,
+                            ordered = TRUE,
+                            levels = c("One Vote","Two Votes","Three Votes"))) %>%
+    filter(total_votes > 0) %>%
+    select(n_presences,Support, prop)%>%
+    group_by(n_presences,Support)%>%
+    summarise(mean_prop = mean(prop,na.rm=TRUE)) %>%
+    filter(n_presences %in% c(2,100))
+    
+###
+  
+
+  ensemble_profiles %>%
+    rowwise()%>%
+    filter(!is.na(one_vote))%>%
+    mutate(`One Vote +` = (one_vote+two_votes+three_votes)/total_votes,
+           `Two Votes +` = (two_votes+three_votes)/total_votes,
+           `Three Votes` = (three_votes)/total_votes)%>%
+    pivot_longer(cols = c(`One Vote +`,`Two Votes +`,`Three Votes`),
+                 names_to = "Support",
+                 values_to = "prop")%>%
+    mutate(Support = factor(x=Support,
+                            ordered = TRUE,
+                            levels = c("One Vote +",
+                                       "Two Votes +",
+                                       "Three Votes"))) %>%
+    filter(Support != "One Vote +")%>%
+    filter(Support != "Two Votes +") -> ensemble_profile_summary
+  
+  ensemble_profile_summary %>%
+    group_by(n_presences,Support)%>%
+    summarise(low = quantile(x=prop,0.025,na.rm=TRUE),
+              high = quantile(x=prop,0.975,na.rm=TRUE)
+    ) %>%
+    ungroup() %>%
+    group_by(Support) %>%
+    mutate(ci_low = loess(formula = low ~ n_presences) %>%
+             predict(),
+           ci_high = loess(formula = high ~ n_presences) %>%
+             predict()) -> ensemble_profile_cis
+  
+  
+    ensemble_v_occs_plot <-  
+    ensemble_profile_summary %>%  
+    ggplot(mapping = aes(x = n_presences,
+                         y = prop,
+                         color=Support)) +
+    geom_point(alpha=0.2)+
+    geom_smooth(method="loess",se = FALSE)+
+      geom_ribbon(data = ensemble_profile_cis,
+                  mapping = aes(x=n_presences,
+                                ymin = ci_low,
+                                ymax = ci_high,
+                                fill=Support),
+                  alpha=0.3,
+                  inherit.aes = FALSE)+
+    xlab("Occurrence Records")+
+    #ylab("Proportion of Predicted Locations")+
+    ylab("Proportion of Predicted Locations \nwith Total Model Consensus")+
+    theme_bw()+
+    scale_color_viridis_d()+
+    scale_x_continuous(expand=c(0,0))+
+    scale_y_continuous(expand=c(0,0))+
+      coord_cartesian(ylim = c(0,1))+
+      theme(legend.position = "none",
+            plot.margin = margin(10, 11, 10, 10))
+  #+geom_hline(yintercept = 0.5,lty=2)
+  #+geom_vline(xintercept = 10,lty=1)
+  
+    ensemble_v_occs_plot
+    
+    ggsave(filename = "figures/ensemble_agreement_v_occs.jpg",
+           plot =     ensemble_v_occs_plot,
+           units = "in",
+           width = 10,
+           height = 5)
+    
+    ggsave(filename = "figures/ensemble_agreement_v_occs.svg",
+           plot =     ensemble_v_occs_plot,
+           units = "in",width = 10,
+           height = 5)
+    
+    
+
+# Code to make a simple range map when given a species name
+
+  source("R/quick_and_dirty_ensemble_map.R")
+
+    #Liatris_gholsonii
+
+  #Chrysopsis_subulata not bad
+
+  example_map <-quick_and_dirty_ensemble_map(env = env,
+                               csv_file = ensemble_profiles %>%
+                                 filter(species == "Chrysopsis_subulata")%>%
+                                 pull(csv_file),
+                               ensemble = c("kde/kde","rulsif","maxnet"),
+                               buffer_width = 200000,
+                               quantile = 0.05 
+                               )
+
+
+  example_map+
+    scale_fill_manual(values = c("lightgreen","green","darkgreen"))
+  
+
+all_counts %>%
+  filter(species =="Liatris_gholsonii")%>%
+  pull(file)->csv_file
+
+
 
 # Here, we'll use the same data as before for Trillium vaseyi.
 

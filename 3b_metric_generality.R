@@ -5,6 +5,38 @@
 #load packages
 library(confintr)
 
+
+library(tidyverse)
+library(ggplot2)
+library(tidyverse)
+
+# Load and format full data
+
+tempfile_full <- "outputs/temp_bakeoff_output_full.rds"
+tempfile_full_dr <- "outputs/temp_bakeoff_output_full_dr.rds"
+
+
+full_output <- readRDS(tempfile_full)
+full_output_dr <- readRDS(tempfile_full_dr)
+
+full_output %>%
+  mutate(pa_AUC = as.numeric(pa_AUC),
+         full_AUC = as.numeric(full_AUC)) -> full_output
+
+full_output_dr %>%
+  mutate(pa_AUC = as.numeric(pa_AUC),
+         full_AUC = as.numeric(full_AUC)) -> full_output_dr
+
+full_output_dr %>%
+  bind_rows(full_output)->full_output
+
+full_output %>%
+  mutate(model = case_when(!is.na(ratio_method) ~ ratio_method,
+                           is.na(ratio_method) ~ paste(pres_method, "/", bg_method))) -> full_output
+
+rm(full_output_dr)
+
+
 # combining fold data with full data
 
 fold_output %>%
@@ -23,17 +55,18 @@ fold_output %>%
             'mean testing_kappa' = na.omit(testing_kappa) %>% mean(),
             'mean entropy' = na.omit(entropy) %>% mean())-> mean_fold_output
 
-full_output %>%
-  full_join(mean_fold_output,by = c("species","model"))->combined_output
+full_output %>%full_join(mean_fold_output,
+                         by = c("species","model") )-> combined_output
 
+#full_output ->combined_output
 #########
 
 #How many species have 20 or fewer occurrences?
 combined_output %>%
-  select(species,n_presence)%>%
+  dplyr::select(species,n_presence)%>%
   na.omit()%>%
   unique()%>%
-  filter(n_presence <= 20)
+  dplyr::filter(n_presence <= 20)
 
 
 combined_output %>%
@@ -174,7 +207,7 @@ combined_output %>%
   filter(n_presence <= 20) %>%
   group_by(model) %>%
   #filter(!all(is.na(pa_AUC))) %>%
-  select(model,full_AUC,pa_AUC)%>%
+  dplyr::select(model,full_AUC,pa_AUC)%>%
   mutate(metric = "AUC")%>%
   rename(full_value = full_AUC,
          pa_value = pa_AUC)%>%
@@ -184,7 +217,7 @@ bind_rows(
   filter(n_presence <= 20) %>%
   group_by(model) %>%
   #filter(!all(is.na(pa_AUC))) %>%
-  select(model,full_sensitivity,pa_sensitivity)%>%
+  dplyr::select(model,full_sensitivity,pa_sensitivity)%>%
   mutate(metric = "sensitivity")%>%
   rename(full_value = full_sensitivity,
          pa_value = pa_sensitivity))%>%
@@ -194,7 +227,7 @@ bind_rows(
     filter(n_presence <= 20) %>%
     group_by(model) %>%
     #filter(!all(is.na(pa_AUC))) %>%
-    select(model,full_specificity,pa_specificity)%>%
+    dplyr::select(model,full_specificity,pa_specificity)%>%
     mutate(metric = "specificity")%>%
     rename(full_value = full_specificity,
            pa_value = pa_specificity))%>%
@@ -204,7 +237,7 @@ bind_rows(
       filter(n_presence <= 20) %>%
       group_by(model) %>%
       #filter(!all(is.na(pa_AUC))) %>%
-      select(model,full_prediction_accuracy,pa_prediction_accuracy)%>%
+      dplyr::select(model,full_prediction_accuracy,pa_prediction_accuracy)%>%
       mutate(metric = "prediction_accuracy")%>%
       rename(full_value = full_prediction_accuracy,
              pa_value = pa_prediction_accuracy))%>%
@@ -213,7 +246,7 @@ bind_rows(
       filter(n_presence <= 20) %>%
       group_by(model) %>%
       #filter(!all(is.na(pa_AUC))) %>%
-      select(model,full_kappa,pa_kappa)%>%
+      dplyr::select(model,full_kappa,pa_kappa)%>%
       mutate(metric = "kappa")%>%
       rename(full_value = full_kappa,
              pa_value = pa_kappa)) %>%
@@ -222,7 +255,7 @@ bind_rows(
       filter(n_presence <= 20) %>%
       group_by(model) %>%
       #filter(!all(is.na(pa_AUC))) %>%
-      select(model,full_correlation,pa_correlation)%>%
+      dplyr::select(model,full_correlation,pa_correlation)%>%
       mutate(metric = "correlation")%>%
       rename(full_value = full_correlation,
              pa_value = pa_correlation)) -> metric_corr_data

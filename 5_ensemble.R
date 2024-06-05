@@ -13,6 +13,7 @@ library(sf)
 library(DescTools)
 library(foreach)
 library(doParallel)
+library(disdat)
 source("R/evaluate_disdat_ensemble.R")
 
 
@@ -27,7 +28,6 @@ source("R/evaluate_disdat_ensemble.R")
                          verbose = TRUE,
                          ncl = 5,
                          temp_file = "outputs/temp_ensemble_eval.RDS")
-  
   
 # Get non-ensemble data for comparison
   
@@ -307,4 +307,234 @@ source("R/evaluate_disdat_ensemble.R")
              file = "tables/ensemble_table.csv",
              row.names = FALSE)   
 
+   
+#############################################
+
+# Ensemble spanning less sensitivity-specificity  
+   
+   # lets keep maxnet, but shrink the other side
+   # my guess is that, since these are all on the sensitivity side, 
+    # the ensemble will perform less well on specificity, but comparably on sensitivity
+   
+   less_variation_ensemble_performance <- evaluate_ensemble_disdat(model_vector = c("maxnet","gaussian/gaussian","gaussian/kde"),
+                                                                   quantile = 0.05,
+                                                                   verbose = TRUE,
+                                                                   ncl = 5,
+                                                                   temp_file = "outputs/temp_low_variation_ensemble_eval.RDS")
+   
+   less_variation_ensemble_performance$full_model_stats %>%
+     select(species,n_presence, contains("sensitivity")|contains("specificity")|contains("prediction")) %>%
+     select(species,n_presence, contains("pa_")) %>%
+     select(species,n_presence, !contains("pAUC_")) %>%
+     pivot_longer(cols = contains("sensit")|contains("specif")|contains("prediction"))%>%
+     mutate(model = case_when(grepl(pattern = "any_vote",x=name) ~ "ensemble_any_votes",
+                              grepl(pattern = "all_vote",x=name) ~ "ensemble_all_votes",
+                              .default = "ensemble_mean"))%>%
+     mutate(metric = case_when(grepl(pattern = "sensitivity",x=name) ~ "sensitivity",
+                               grepl(pattern = "specificity",x=name) ~ "specificity",
+                               grepl(pattern = "prediction",x=name) ~ "prediction_accuracy"))%>%
+     bind_rows(     full_output %>%
+                      mutate(model = gsub(pattern = " ",replacement="",x=model))%>%
+                      filter(model %in% c("maxnet","gaussian/gaussian","gaussian/kde"))%>%
+                    select(species,n_presence, model, pa_sensitivity,pa_specificity,pa_prediction_accuracy) %>%
+                    pivot_longer(contains("pa_"),names_to = "metric")%>%
+                    mutate(metric = gsub(pattern = "pa_",replacement = "",x=metric))) %>%
+     # mutate(model = factor(x=model,levels = c("ensemble_all_votes","ensemble_mean","ensemble_any_votes",
+     #                                          "kde/kde","rulsif","maxnet")))%>%
+     mutate(model = gsub(pattern = "_",replacement =" ",x=model))%>%
+     mutate(metric = gsub(pattern = "_",replacement =" ",x=metric))%>%
+     # mutate(model = factor(x=model,levels = c("ensemble all votes","kde/kde",
+     #                                          "ensemble mean","rulsif",
+     #                                          "maxnet","ensemble any votes")))%>%
+     mutate(metric = factor(x=metric,levels = c("sensitivity","specificity","prediction accuracy")))%>%
+     filter(n_presence <= 20)%>%
+     ggplot(mapping = aes(x = model,
+                          y = value))+
+     geom_hline(data = . %>%
+                  group_by(metric,model)%>%
+                  summarize(med_value = median(value))%>%
+                  slice_max(order_by = med_value,n = 1),
+                mapping = aes(yintercept = med_value),lty=2)+
+     geom_boxplot()+
+     facet_wrap(~metric,ncol = 1)+
+     theme_bw()+
+     xlab(NULL)+
+     ylab(NULL)
+   
+   
+   less_variation_ensemble_performance$full_model_stats %>%
+     select(species,n_presence, contains("sensitivity")|
+              contains("specificity")|
+              contains("prediction")|
+              contains("correlation")|
+              contains("kappa")) %>%
+     select(species,n_presence, contains("pa_")) %>%
+     select(species,n_presence, !contains("pAUC_")) %>%
+     pivot_longer(cols = contains("pa_"))%>%
+     mutate(model = case_when(grepl(pattern = "any_vote",x=name) ~ "ensemble_any_votes",
+                              grepl(pattern = "all_vote",x=name) ~ "ensemble_all_votes",
+                              .default = "ensemble_mean"))%>%
+     mutate(metric = case_when(grepl(pattern = "sensitivity",x=name) ~ "sensitivity",
+                               grepl(pattern = "specificity",x=name) ~ "specificity",
+                               grepl(pattern = "prediction",x=name) ~ "prediction_accuracy",
+                               grepl(pattern = "correlation",x=name) ~ "correlation",
+                               grepl(pattern = "kappa",x=name) ~ "kappa"))%>%
+     select(species,n_presence,value,model,metric)%>%
+     # bind_rows(   relevant_full_output %>%
+     #                select(species,n_presence, model,
+     #                       pa_sensitivity,
+     #                       pa_specificity,
+     #                       pa_prediction_accuracy,
+     #                       pa_correlation,
+     #                       pa_kappa) %>%
+     #                pivot_longer(contains("pa_"),names_to = "metric")%>%
+     #                mutate(metric = gsub(pattern = "pa_",replacement = "",x=metric))) %>%
+     # mutate(model = factor(x=model,levels = c("ensemble_all_votes","ensemble_mean","ensemble_any_votes",
+     #                                          "kde/kde","rulsif","maxnet")))%>%
+     mutate(model = gsub(pattern = "_",replacement =" ",x=model))%>%
+     mutate(metric = gsub(pattern = "_",replacement =" ",x=metric))%>%
+     mutate(model = factor(x=model,levels = c("ensemble all votes","kde/kde",
+                                              "ensemble mean","rulsif",
+                                              "maxnet","ensemble any votes")))%>%
+     #mutate(metric = factor(x=metric,levels = c("sensitivity","specificity","prediction accuracy")))%>%
+     filter(n_presence <= 20)%>%
+     filter(metric != "correlation")%>%
+     group_by(model,metric) %>%
+     summarise(mean_value = mean(value))%>%
+     pivot_wider(names_from = "metric", values_from = "mean_value")%>%
+     arrange(-specificity)%>%
+     dplyr::select(model,`prediction accuracy`,specificity,sensitivity,kappa)%>%
+     mutate(across(1:4, function(x){round(x,digits = 3)}))-> ensemble_table_less_variation
+   
+##############################################
+   
+# Ensemble spanning same sens-specificity, but with more models
+   
+   # selected two additional models that were intermediate between each of the existing models for a total of 7
+   
+   # my guess is that the all/any votes should be the same, but with longer model runtimes
+   
+   # Get ensemble performance data
+   
+   lots_of_models_ensemble_performance <- evaluate_ensemble_disdat(model_vector = c("maxnet",
+                                                                     "gaussian/gaussian",
+                                                                     "rangebagging/none",
+                                                                     "rulsif",
+                                                                     "lobagoc/none",
+                                                                     "ulsif",
+                                                                     "kde/kde"),
+                                                    quantile = 0.05,
+                                                    verbose = TRUE,
+                                                    ncl = 5,
+                                                    temp_file = "outputs/temp_lots_of_models_ensemble_eval.RDS")
+   
+#######################################################
+   library(grid)
+   
+  poor_models <- read.csv("tables/small_sample_size_comparison_to_maxnet.csv") %>%
+    filter(is.na(pval) | pval <= 0.05)%>%
+     pull(model)
+   
+      # combine ensemble outputs
+   
+    # should be sensitivity with any votes, specificity with all votes
+   
+   
+     ensemble_performance$full_model_stats %>%
+     select(species,n_presence,
+            pa_any_vote_sensitivity,
+            pa_any_vote_specificity,
+            pa_all_vote_specificity,
+            pa_all_vote_sensitivity) %>%
+     mutate(model = "ensemble_wide_few")%>%
+     bind_rows( less_variation_ensemble_performance$full_model_stats %>%
+                  select(species,n_presence,
+                         pa_any_vote_sensitivity,
+                         pa_any_vote_specificity,
+                         pa_all_vote_specificity,
+                         pa_all_vote_sensitivity) %>%
+                  mutate(model = "ensemble_narrow_few"))%>%
+     bind_rows( lots_of_models_ensemble_performance$full_model_stats %>%
+                  select(species,n_presence,
+                         pa_any_vote_sensitivity,
+                         pa_any_vote_specificity,
+                         pa_all_vote_specificity,
+                         pa_all_vote_sensitivity) %>%
+                  mutate(model = "ensemble_wide_many"))%>%
+     mutate(All = pa_all_vote_sensitivity-pa_all_vote_specificity,
+            Any = pa_any_vote_sensitivity-pa_any_vote_specificity,
+            All_sum = pa_all_vote_sensitivity + pa_all_vote_specificity,
+            Any_sum = pa_any_vote_sensitivity + pa_any_vote_specificity)%>%
+       pivot_longer(cols = c(All,Any),
+                    names_to = "Votes",
+                    values_to = "sens_spec_ratio") %>%
+       pivot_longer(cols = c(All_sum,Any_sum),
+                    names_to = "Votes_sum",
+                    values_to = "sens_spec_sum") %>%
+       mutate(Votes_sum = gsub(pattern = "_sum",
+                               replacement = "",
+                               x=Votes_sum)) %>%
+       filter(Votes == Votes_sum) %>%
+       # join with the non-ensemble data
+       
+       bind_rows( full_output %>%
+                          select(species,n_presence,
+                                 pa_sensitivity,
+                                 pa_specificity,
+                                 model)%>%
+                          mutate(Votes="NA",
+                                 sens_spec_ratio = pa_sensitivity - pa_specificity,
+                                 sens_spec_sum = pa_sensitivity + pa_specificity)
+                        ) %>%
+       #filter to rare species
+       filter(n_presence <=20) %>%
+       #filter out anything that did worse than maxent for rare species
+       filter(!model %in% poor_models)%>%
+       group_by(model,Votes) %>%
+       summarise(mean_sens_spec = median(sens_spec_ratio,na.rm=TRUE),
+                 sens_spec_low = quantile(sens_spec_ratio,0.25,na.rm=TRUE),
+                 sens_spec_high = quantile(sens_spec_ratio,0.75,na.rm=TRUE),
+                 med_sum_sens_spec = median(sens_spec_sum,na.rm=TRUE) ) -> temp_data
+     
+
+     temp_data%>%
+     ggplot(mapping = aes(y=model,x=mean_sens_spec,color=Votes))+
+     geom_point(mapping = aes(size=med_sum_sens_spec))+
+      geom_errorbarh(mapping = aes(y=model,
+                                   xmin=sens_spec_low,
+                                   xmax=sens_spec_high,
+                                   color=Votes))+
+       xlim(c(-1,1))+
+       scale_y_discrete(limits=temp_data%>%
+                          group_by(model)%>%
+                          summarize(order = case_when(all(Votes == 'NA')~ mean(mean_sens_spec),
+                                                      all(Votes != "NA") ~ 1+var(mean_sens_spec)))%>%
+                          arrange(-order)%>%
+                          pull(model))+
+       xlab("Sensitivity - Specificity")+
+       labs(size = "Sensitivity +\nSpecificity") -> temp
+     temp 
+     
+     #text_high <- textGrob("High Specificity", gp=gpar(fontsize=13, fontface="bold"))
+     
+     text_high_spec <- textGrob("High Specificity\nPresences Correct\nAssumes good sampling")
+     text_high_sens <- textGrob("High Sensitivity\nAbsences Correct\nAssumes poor sampling")
+     
+
+     
+     
+     temp+
+       annotation_custom(text_high_spec,xmin=-1,xmax=-1,ymin=-8,ymax=-6)+
+       annotation_custom(text_high_sens,xmin=1,xmax=1,ymin=-8,ymax=-6)+
+       theme(plot.margin = unit(c(1,1,4,1), "lines")) + #top,right,bottom,left
+       coord_cartesian(ylim=c(25,0), clip="off")
+     
+     
+       ?annotation_custom
+     
+    # order models according to something
+     
+     
+
+     
      

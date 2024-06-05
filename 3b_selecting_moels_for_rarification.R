@@ -204,6 +204,31 @@ full_output %>%
     ylab("Specificity (P/A)")+
     theme_bw()
     
+#################
   
+  #how many times does each model perform best?
   
+    full_output %>%
+      select(species,n_presence,model,pa_AUC)%>%
+      group_by(species)%>%
+      slice(which.max(pa_AUC))%>%
+      ungroup()%>%
+      group_by(model)%>%
+      summarise(n = n())%>%
+      arrange(-n)%>%
+    mutate(prop_pct = (n/sum(n)) %>% round(2)*100)
+  
+  full_output %>%
+    filter(n_presence <= 20) %>%
+    select(species,n_presence,model,pa_AUC)%>%
+    group_by(species)%>%
+    slice(which.max(pa_AUC))%>%
+    ungroup()%>%
+    group_by(model)%>%
+    summarise(n = n())%>%
+    arrange(-n)%>%
+    mutate(prop_pct = (n/sum(n)) %>% round(2)*100)
+
+    
+
     

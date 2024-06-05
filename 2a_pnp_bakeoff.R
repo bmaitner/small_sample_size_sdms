@@ -560,7 +560,7 @@ library(tidyverse)
         pull(model) -> small_sample_comparable_to_maxnet
       
       small_samples_models_v_maxent %>%
-        dplyr::select(model,W,pval) %>%
+        select(model,W,pval) %>%
         arrange(-pval)%>%
         write.csv(file = "tables/small_sample_size_comparison_to_maxnet.csv",
                   row.names = FALSE)
@@ -579,7 +579,7 @@ library(tidyverse)
                                 arrange(sm) %>%
                                 pull(model))) %>%
         filter(model %in% all_sample_comparable_to_maxnet ) %>%
-        dplyr::select(model,pa_AUC,pa_specificity,pa_sensitivity) %>%
+        select(model,pa_AUC,pa_specificity,pa_sensitivity) %>%
         pivot_longer(contains("pa_"),names_to = "metric") %>%
         mutate(metric = gsub(pattern = "pa_",replacement = "",x =metric))%>%
         ggplot(mapping = aes(x=model,y=value))+

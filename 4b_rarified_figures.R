@@ -50,7 +50,7 @@ rarified_full %>%
   #                           model == "rangebagging/none" ~ "Rangebagging"))%>%
   na.omit() %>%
   rename(Model = model) %>%
-  ggplot(mapping = aes(x=n_presence,y=value,color=Model))+
+  ggplot(mapping = aes(x=n_presence,y=value,color=Model,lty=Model))+
   geom_point(alpha=0.01)+
   # geom_smooth(method = "lm",
   #             se = FALSE)+

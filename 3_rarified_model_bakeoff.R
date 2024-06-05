@@ -15,7 +15,9 @@ source("R/rarified_eval_disdat.R")
 
 # Load the full model output
 
-  stop("this needs updating after models finish running")
+  stop("add code to remove any spaces in the model vector. E.g., 'kde / kde' should be converted to 'kde/kde'")
+  stop("alternatively, just throw an error telling me to remove the spaces")
+
 
 model_vector = c("maxnet",
                  "rangebagging/none",
@@ -26,22 +28,23 @@ model_vector = c("maxnet",
                  "rulsif",
                  "ulsif",
                  "gaussian/kde",
-                 "vine / vine",
-                 "kde / vine"
+                 "vine/vine",
+                 "kde/vine"
                  #,"lobagoc/none" # need debugging AUC calc
                  #,"vine/none"    # need debugging AUC calc
                  ) #need to add more selected models to this
 
 
 #Lower priority stuff to add                     
-  # "rangebagging / rangebagging"
-  # "gaussian / rangebagging"
-  # "kde / rangebagging"
-  # "kde / gaussian"
-  # "gaussian / vine"
-  # "vine / rangebagging"
-  # "vine / gaussian"
-  # "vine / kde"                 
+  # "rangebagging/rangebagging"
+  # "gaussian/rangebagging"
+  # "kde/rangebagging"
+  # "kde/gaussian"
+  # "gaussian/vine"
+  # "vine/rangebagging"
+  # "vine/gaussian"
+  # "vine/kde"
+  # "CVmaxnet"
 
 
 rarified_eval_disdat(presence_vector = (1:10)^2,
