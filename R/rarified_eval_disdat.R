@@ -641,18 +641,26 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
                   
                   if(is.null(ratio_method)){
                     
-                    full_predictions <- project_plug_and_play(pnp_model = model_full,
-                                                              data = full_data)  
+                    full_predictions <- tryCatch(project_plug_and_play(pnp_model = model_full,
+                                                              data = full_data),
+                                                 error = function(e){e})  
                     
                   }else{
                     
-                    full_predictions <- project_density_ratio(dr_model = model_full,
-                                                              data = full_data)
+                    full_predictions <- tryCatch(project_density_ratio(dr_model = model_full,
+                                                              data = full_data),
+                                                 error = function(e){e})
                     
                   }
                   
-                
+                #if predictions failed, set predicitons to NA
+                  
+                  if(inherits(full_predictions,"error")){
+                    full_predictions <- NA
                     
+                  }
+                   
+
                 if(all(is.na(full_predictions))){
                   
                   out_full$n_background <- nrow(background_s[,7:ncol(background_s)])
@@ -690,18 +698,28 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
                   names(full_pres) <- "env"
                   
                   
-                  response_curves_full <- get_response_curves(env_bg = full_bg,
+                  response_curves_full <- tryCatch(get_response_curves(env_bg = full_bg,
                                                               env_pres = full_pres,
                                                               pnp_model = model_full,
-                                                              n.int = 1000)
+                                                              n.int = 1000),error = function(e){e})
                   
-                  mean_ent_full <- 
-                    response_curves_full %>%
-                    select(variable,prediction) %>%
-                    group_by(variable) %>%
-                    summarise(entropy = Entropy(prediction)) %>%
-                    ungroup() %>%
-                    summarise(mean_ent = mean(entropy))
+                  if(inherits(response_curves_full,"error")){
+                    
+
+                    mean_ent_full <- data.frame(mean_ent = NA)
+                    
+                  }else{
+                    
+                    mean_ent_full <- 
+                      response_curves_full %>%
+                      select(variable,prediction) %>%
+                      group_by(variable) %>%
+                      summarise(entropy = Entropy(prediction)) %>%
+                      ungroup() %>%
+                      summarise(mean_ent = mean(entropy))
+                    
+                    
+                  }
                   
                   
                   
@@ -784,17 +802,23 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
                                           level = c(0,1),
                                           direction = "<")
                   
-                  out_full$pa_pAUC_specificity <- pROC::auc(roc = pa_roc_obj,
-                                                            partial.auc = c(.8, 1),
-                                                            partial.auc.correct = TRUE,
-                                                            partial.auc.focus = "specificity")[[1]]
-                  
-                  out_full$pa_pAUC_sensitivity <- pROC::auc(roc = pa_roc_obj,
-                                                            partial.auc = c(.8, 1),
-                                                            partial.auc.correct = TRUE,
-                                                            partial.auc.focus = "sensitivity")[[1]]
-                  
-                  out_full$pa_AUC <- pa_roc_obj$auc
+                  if(inherits(pa_roc_obj,"roc")){
+                    
+                    out_full$pa_pAUC_specificity <- pROC::auc(roc = pa_roc_obj,
+                                                              partial.auc = c(.8, 1),
+                                                              partial.auc.correct = TRUE,
+                                                              partial.auc.focus = "specificity")[[1]]
+                    
+                    out_full$pa_pAUC_sensitivity <- pROC::auc(roc = pa_roc_obj,
+                                                              partial.auc = c(.8, 1),
+                                                              partial.auc.correct = TRUE,
+                                                              partial.auc.focus = "sensitivity")[[1]]
+                    
+                    out_full$pa_AUC <- pa_roc_obj$auc
+                    
+                    
+                  }
+
                   
                   pa_suitability_v_occurrence <- na.omit(pa_suitability_v_occurrence)
                   
