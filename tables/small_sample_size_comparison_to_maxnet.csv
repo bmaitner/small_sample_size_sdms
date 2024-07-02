@@ -1,6 +1,5 @@
 "model","W","pval"
 "maxnet",578,1
-"CVmaxnet",555.5,0.950000047204555
 "rangebagging / rangebagging",974,0.92587648673304
 "rangebagging / none",488,0.773924530423801
 "vine / kde",518,0.745179282435312
