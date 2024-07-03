@@ -27,11 +27,12 @@ model_vector = c("maxnet",
                  "kde/none",
                  "rulsif",
                  "ulsif",
-                 "gaussian/kde",
-                 "vine/vine",
-                 "kde/vine"
+                 "gaussian/kde"
+                 #,
+                 # "vine/vine",
+                 # "kde/vine"
                  #,"lobagoc/none" # need debugging AUC calc
-                 #,"vine/none"    # need debugging AUC calc
+                 ,"vine/none"    # need debugging AUC calc
                  ) #need to add more selected models to this
 
 
@@ -44,8 +45,19 @@ model_vector = c("maxnet",
   # "vine/rangebagging"
   # "vine/gaussian"
   # "vine/kde"
-  # "CVmaxnet"
 
+
+if(file.exists("outputs/temp_rarified_full.RDS")){
+  
+  file.copy(from = "outputs/temp_rarified_full.RDS",
+            to = "outputs/temp_rarified_full_backup.RDS")
+}
+
+if(file.exists("outputs/temp_rarified_fold.RDS")){
+  
+  file.copy(from = "outputs/temp_rarified_fold.RDS",
+            to = "outputs/temp_rarified_fold_backup.RDS")
+}
 
 rarified_eval_disdat(presence_vector = (1:10)^2,
                      n_reps = 3,
@@ -56,6 +68,8 @@ rarified_eval_disdat(presence_vector = (1:10)^2,
                      verbose = TRUE,
                      ncl = 5,
                      seed = 2005)
+
+
 
 
 # Setting levels: control = 0, case = 1
