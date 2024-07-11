@@ -431,7 +431,7 @@ source("R/evaluate_disdat_ensemble.R")
 #######################################################
    library(grid)
    
-  poor_models <- read.csv("tables/small_sample_size_comparison_to_maxnet.csv") %>%
+    poor_models <- read.csv("tables/small_sample_size_comparison_to_maxnet.csv") %>%
     filter(is.na(pval) | pval <= 0.05)%>%
      pull(model)
    
@@ -490,6 +490,7 @@ source("R/evaluate_disdat_ensemble.R")
        filter(n_presence <=20) %>%
        #filter out anything that did worse than maxent for rare species
        filter(!model %in% poor_models)%>%
+       filter(model != "CVmaxnet")%>%
        group_by(model,Votes) %>%
        summarise(mean_sens_spec = median(sens_spec_ratio,na.rm=TRUE),
                  sens_spec_low = quantile(sens_spec_ratio,0.25,na.rm=TRUE),
@@ -523,17 +524,28 @@ source("R/evaluate_disdat_ensemble.R")
 
      
      
-     temp+
+     temp <- temp+
        annotation_custom(text_high_spec,xmin=-1,xmax=-1,ymin=-8,ymax=-6)+
        annotation_custom(text_high_sens,xmin=1,xmax=1,ymin=-8,ymax=-6)+
        theme(plot.margin = unit(c(1,1,4,1), "lines")) + #top,right,bottom,left
        coord_cartesian(ylim=c(25,0), clip="off")
      
      
-       ?annotation_custom
-     
-    # order models according to something
-     
+    ggsave(filename = "figures/ensemble_sens_spec.jpg",
+           plot = temp,
+           width = 10,
+           height = 4.5,
+           units = "in",
+           dpi = 600)
+    
+    ggsave(filename = "figures/ensemble_sens_spec.svg",
+           plot = temp,
+           width = 10,
+           height = 4.5,
+           units = "in",
+           dpi = 600)   
+    
+
      
 
      
