@@ -50,13 +50,15 @@ model_vector = c("maxnet",
 if(file.exists("outputs/temp_rarified_full.RDS")){
   
   file.copy(from = "outputs/temp_rarified_full.RDS",
-            to = "outputs/temp_rarified_full_backup.RDS")
+            to = "outputs/temp_rarified_full_backup.RDS",
+            overwrite = TRUE)
 }
 
 if(file.exists("outputs/temp_rarified_fold.RDS")){
   
   file.copy(from = "outputs/temp_rarified_fold.RDS",
-            to = "outputs/temp_rarified_fold_backup.RDS")
+            to = "outputs/temp_rarified_fold_backup.RDS",
+            overwrite = TRUE)
 }
 
 rarified_eval_disdat(presence_vector = (1:10)^2,
