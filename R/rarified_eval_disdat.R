@@ -443,17 +443,27 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
                                                                level = c(0,1),
                                                                direction = "<")
                                  
-                                 out$training_AUC[fold] <- training_roc_obj$auc
                                  
-                                 out$training_pAUC_specificity[fold] <- pROC::auc(roc = training_roc_obj,
-                                                                                  partial.auc = c(.8, 1),
-                                                                                  partial.auc.correct = TRUE,
-                                                                                  partial.auc.focus = "specificity")[[1]]
-                                 
-                                 out$training_pAUC_sensitivity[fold] <- pROC::auc(roc = training_roc_obj,
-                                                                                  partial.auc = c(.8, 1),
-                                                                                  partial.auc.correct = TRUE,
-                                                                                  partial.auc.focus = "sensitivity")[[1]]
+                                if(inherits(training_roc_obj,"roc")){
+                                  
+
+                                  out$training_AUC[fold] <- training_roc_obj$auc
+                                  
+                                  out$training_pAUC_specificity[fold] <- pROC::auc(roc = training_roc_obj,
+                                                                                   partial.auc = c(.8, 1),
+                                                                                   partial.auc.correct = TRUE,
+                                                                                   partial.auc.focus = "specificity")[[1]]
+                                  
+                                  out$training_pAUC_sensitivity[fold] <- pROC::auc(roc = training_roc_obj,
+                                                                                   partial.auc = c(.8, 1),
+                                                                                   partial.auc.correct = TRUE,
+                                                                                   partial.auc.focus = "sensitivity")[[1]]
+                                  
+                                  
+                                  
+                                  
+                                  
+                                }
                                  
                                  #Testing data
                                  
@@ -462,17 +472,25 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
                                                               level = c(0,1),
                                                               direction = "<")
                                  
-                                 out$testing_AUC[fold] <- testing_roc_obj$auc
                                  
-                                 out$testing_pAUC_specificity[fold] <- pROC::auc(roc = testing_roc_obj,
-                                                                                 partial.auc = c(.8, 1),
-                                                                                 partial.auc.correct = TRUE,
-                                                                                 partial.auc.focus = "specificity")[[1]]
-                                 
-                                 out$testing_pAUC_sensitivity[fold] <- pROC::auc(roc = testing_roc_obj,
-                                                                                 partial.auc = c(.8, 1),
-                                                                                 partial.auc.correct = TRUE,
-                                                                                 partial.auc.focus = "sensitivity")[[1]]
+                          if(inherits(testing_roc_obj,"roc")){
+                            
+                            
+                            out$testing_AUC[fold] <- testing_roc_obj$auc
+                            
+                            out$testing_pAUC_specificity[fold] <- pROC::auc(roc = testing_roc_obj,
+                                                                            partial.auc = c(.8, 1),
+                                                                            partial.auc.correct = TRUE,
+                                                                            partial.auc.focus = "specificity")[[1]]
+                            
+                            out$testing_pAUC_sensitivity[fold] <- pROC::auc(roc = testing_roc_obj,
+                                                                            partial.auc = c(.8, 1),
+                                                                            partial.auc.correct = TRUE,
+                                                                            partial.auc.focus = "sensitivity")[[1]] 
+                            
+                            
+                          }
+                           
                                  
                                  
                                  # Code to make testing suitability scores binary
@@ -660,6 +678,14 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
                     
                   }
                    
+                # if predicitons include Inf, set to NA
+                  
+                  
+                  
+                  if(any(is.infinite(full_predictions))){
+                    full_predictions <- NA
+                    
+                  }
 
                 if(all(is.na(full_predictions))){
                   

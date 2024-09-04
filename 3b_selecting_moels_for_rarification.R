@@ -185,6 +185,7 @@ full_output %>%
   ci_max = 0.75
   
   full_output %>%
+    filter(model != "CVmaxnet") %>%
     filter(bg_method == "none" | is.na(bg_method))%>%
     #filter(n_presence > 20)%>%
     group_by(model)%>%
@@ -202,7 +203,17 @@ full_output %>%
                                 xmax = ci_high_pa_sens))+
     xlab("Sensitivty (P/A)")+
     ylab("Specificity (P/A)")+
-    theme_bw()
+    theme_bw() -> sens_v_spec_plot
+  
+  
+  ggsave(plot = sens_v_spec_plot,
+         filename = "figures/sens_v_spec_plot.jpg",
+         width = 6,
+         height = 4,
+         units = "in",
+         dpi = 600)
+  
+
     
 #################
   
