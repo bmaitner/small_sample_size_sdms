@@ -29,8 +29,8 @@ model_vector = c("maxnet",
                  "ulsif",
                  "gaussian/kde",
                  "vine/vine",
-                 "kde/vine"
-                 #,
+                 "kde/vine",
+                 "kde/gaussian"
                  #"lobagoc/none" # need debugging AUC calc
                  ,"vine/none"    # need debugging AUC calc
                  ) #need to add more selected models to this
@@ -40,7 +40,6 @@ model_vector = c("maxnet",
   # "rangebagging/rangebagging"
   # "gaussian/rangebagging"
   # "kde/rangebagging"
-  # "kde/gaussian"
   # "gaussian/vine"
   # "vine/rangebagging"
   # "vine/gaussian"
