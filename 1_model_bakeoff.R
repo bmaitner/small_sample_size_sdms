@@ -121,7 +121,7 @@ full_model_outputs <- readRDS("outputs/bake_off_pnp_full_model_outputs.RDS")
 library(ggplot2)  
 ##################################
 
-dr_models_to_evaluate <- c("ulsif","rulsif","maxnet","CVmaxnet")
+dr_models_to_evaluate <- c("ulsif","rulsif","maxnet")
 
 # Iterate through models
 
@@ -326,15 +326,6 @@ full_model_outputs_dr %>%
 
 
 
-
-
-
-
-
-
-
-
-
 ##############################################  
   
 #Figure 3 in Wisz et al.
@@ -437,9 +428,7 @@ full_model_outputs %>%
     linetype=2
   )+
   xlab("presence-absence AUC")
-
-+
-  theme(legend.position = "none")
+  +theme(legend.position = "none")
 
 
 ###############################################
