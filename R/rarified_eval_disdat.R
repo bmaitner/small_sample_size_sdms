@@ -92,6 +92,7 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
           #Remove categorical predictors  
           
           if(region == "CAN"){
+
             data_i$env <- data_i$env[which(!colnames(data_i$env) %in% c("ontveg"))] 
             data_i$bg <- data_i$bg[which(!colnames(data_i$bg) %in% c("ontveg"))]
             data_i$po <- data_i$po[which(!colnames(data_i$po) %in% c("ontveg"))]
@@ -99,12 +100,14 @@ rarified_eval_disdat <- function(presence_vector = (2:10)^2,
           }
           
           if(region == "NSW"){
+
             data_i$env <- data_i$env[which(!colnames(data_i$env) %in% c("disturb","soilfert","vegsys"))] 
             data_i$bg <- data_i$bg[which(!colnames(data_i$bg) %in% c("disturb","soilfert","vegsys"))]
             data_i$po <- data_i$po[which(!colnames(data_i$po) %in% c("disturb","soilfert","vegsys"))]
           }
           
           if(region == "NZ"){
+
             data_i$env <- data_i$env[which(!colnames(data_i$env) %in% c("age","toxicats"))] 
             data_i$bg <- data_i$bg[which(!colnames(data_i$bg) %in% c("age","toxicats"))]
             data_i$po <- data_i$po[which(!colnames(data_i$po) %in% c("age","toxicats"))]
