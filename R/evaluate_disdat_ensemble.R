@@ -78,7 +78,7 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
       
       species_s <- unique(data_i$po$spid)[s]
       
-    # Skip the species if its already been done  
+    # Skip the species if its already been done
       
       if(species_s %in% full_model_stats$species &
          species_s %in% fold_model_stats$species){
@@ -341,18 +341,28 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
                   training_mean_vector = colMeans(training_predictions)
                   training_sd_vector = apply(X = training_predictions,MARGIN = 2,FUN = sd)
                   
-                  mean_testing_predictions <-
-                  testing_predictions %>%
-                  pbsdm:::rescale_w_objects(mean_vector = training_mean_vector,
-                                            sd_vector = training_sd_vector) %>%
-                    rowMeans(na.rm = TRUE)
+                  std_testing_predictions <- (testing_predictions %>% as.matrix())/colSums(testing_predictions,na.rm = TRUE)
+                  mean_testing_predictions <- rowMeans(std_testing_predictions,
+                                                       na.rm=TRUE)
                   
-                  mean_training_predictions <-
-                    training_predictions %>%
-                    pbsdm:::rescale_w_objects(mean_vector = training_mean_vector,
-                                              sd_vector = training_sd_vector) %>%
-                    rowMeans(na.rm = TRUE)
+                  # mean_testing_predictions <-
+                  # testing_predictions %>%
+                  # pbsdm:::rescale_w_objects(mean_vector = training_mean_vector,
+                  #                           sd_vector = training_sd_vector) %>%
+                  #   rowMeans(na.rm = TRUE)
                   
+                  
+                  std_training_predictions <- (training_predictions %>% as.matrix())/colSums(training_predictions,na.rm = TRUE)
+                  mean_training_predictions <- rowMeans(std_training_predictions,
+                                                       na.rm=TRUE)
+                  
+                  # 
+                  # mean_training_predictions <-
+                  #   training_predictions %>%
+                  #   pbsdm:::rescale_w_objects(mean_vector = training_mean_vector,
+                  #                             sd_vector = training_sd_vector) %>%
+                  #   rowMeans(na.rm = TRUE)
+                  # 
                   
                     
 
@@ -700,15 +710,21 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
         as.data.frame() %>%
         `colnames<-`(NULL)
       
-      full_mean_vector <- colMeans(full_predictions)
+      std_full_predictions <- (full_predictions %>% as.matrix())/colSums(full_predictions,na.rm = TRUE)
+      mean_full_predictions <- rowMeans(std_full_predictions,na.rm=TRUE)
       
-      full_sd_vector <- apply(X = full_predictions,MARGIN = 2,FUN = sd)
+# 
+#       full_mean_vector <- colMeans(full_predictions)
+#       
+#       full_sd_vector <- apply(X = full_predictions,MARGIN = 2,FUN = sd)
+#       
+#       mean_full_predictions <-
+#         full_predictions %>%
+#         pbsdm:::rescale_w_objects(mean_vector = full_mean_vector,
+#                                   sd_vector = full_sd_vector) %>%
+#         rowMeans(na.rm = TRUE)
       
-      mean_full_predictions <-
-        full_predictions %>%
-        pbsdm:::rescale_w_objects(mean_vector = full_mean_vector,
-                                  sd_vector = full_sd_vector) %>%
-        rowMeans(na.rm = TRUE)
+      
       
       
       full_suitability_v_occurrence <- data.frame(suitability = mean_full_predictions,
@@ -838,15 +854,18 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
               as.data.frame() %>%
               `colnames<-`(NULL)
             
-            pa_mean_vector <- colMeans(pa_predictions)
+            std_pa_predictions <- (pa_predictions %>% as.matrix())/colSums(pa_predictions,na.rm = TRUE)
+            mean_pa_predictions <- rowMeans(std_pa_predictions,na.rm=TRUE)
             
-            pa_sd_vector <- apply(X = pa_predictions,MARGIN = 2,FUN = sd)
-            
-            mean_pa_predictions <-
-              pa_predictions %>%
-              pbsdm:::rescale_w_objects(mean_vector = full_mean_vector,
-                                        sd_vector = full_sd_vector) %>%
-              rowMeans(na.rm = TRUE)
+            # pa_mean_vector <- colMeans(pa_predictions)
+            # 
+            # pa_sd_vector <- apply(X = pa_predictions,MARGIN = 2,FUN = sd)
+            # 
+            # mean_pa_predictions <-
+            #   pa_predictions %>%
+            #   pbsdm:::rescale_w_objects(mean_vector = full_mean_vector,
+            #                             sd_vector = full_sd_vector) %>%
+            #   rowMeans(na.rm = TRUE)
             
             pa_suitability_v_occurrence <- 
               data.frame(suitability = mean_pa_predictions,
