@@ -1,4 +1,4 @@
-# 3a pnp bakeoff analyses
+# 2a pnp bakeoff analyses
 
 # Load libraries
 
@@ -33,21 +33,21 @@ library(tidyverse)
   rm(full_output_dr)
 
 # # Load and format cv data
-#   
-#   tempfile_fold <- "outputs/temp_bakeoff_output_fold.rds"
-#   tempfile_fold_dr <- "outputs/temp_bakeoff_output_fold_dr.rds"
-#   
-#   fold_output <- readRDS(tempfile_fold)
-#   fold_output_dr <- readRDS(tempfile_fold_dr)
-#   
-#   fold_output_dr %>%
-#     bind_rows(fold_output) -> fold_output
-#   
-#   fold_output %>%
-#     mutate(model = case_when(!is.na(ratio_method) ~ ratio_method,
-#                              is.na(ratio_method) ~ paste(pres_method, "/", bg_method))) -> fold_output
-#   
-#   rm(fold_output_dr)
+
+  tempfile_fold <- "outputs/temp_bakeoff_output_fold.rds"
+  tempfile_fold_dr <- "outputs/temp_bakeoff_output_fold_dr.rds"
+
+  fold_output <- readRDS(tempfile_fold)
+  fold_output_dr <- readRDS(tempfile_fold_dr)
+
+  fold_output_dr %>%
+    bind_rows(fold_output) -> fold_output
+
+  fold_output %>%
+    mutate(model = case_when(!is.na(ratio_method) ~ ratio_method,
+                             is.na(ratio_method) ~ paste(pres_method, "/", bg_method))) -> fold_output
+
+  rm(fold_output_dr)
   
   
   
@@ -61,6 +61,7 @@ library(tidyverse)
     Table1 <-
       
     full_output %>%
+      filter(model != "CVmaxnet" ) %>%
       group_by(model) %>%
       summarise('median PA AUC' = na.omit(pa_AUC) %>% median(),
                 'mean PA AUC' = na.omit(pa_AUC) %>% mean(),
@@ -85,6 +86,7 @@ library(tidyverse)
   # Table 1 for small sample sizes only
   Table1_sss <-
   full_output %>%
+    filter(model != "CVmaxnet" ) %>%
     filter(n_presence <= 20) %>%
     group_by(model) %>%
     summarise('median PA AUC' = na.omit(pa_AUC) %>% median(),
@@ -111,6 +113,7 @@ library(tidyverse)
   Table2 <-
     
     fold_output %>%
+    filter(model != "CVmaxnet" ) %>%
     group_by(model) %>%
     summarise('median testing AUC' = na.omit(testing_AUC) %>% median(),
               'mean testing AUC' = na.omit(testing_AUC) %>% mean(),
@@ -137,6 +140,7 @@ library(tidyverse)
   
   Table2_sss <-
     fold_output %>%
+    filter(model != "CVmaxnet" ) %>%
     filter(n_presence <= 20) %>%
     group_by(model) %>%
     summarise('median testing AUC' = na.omit(testing_AUC) %>% median(),
@@ -155,7 +159,6 @@ library(tidyverse)
   Table2_sss %>%
     write.csv(file = "tables/Table2_sss.csv",
               row.names = FALSE)
-  
 
 ######################################################################
   
@@ -164,6 +167,7 @@ library(tidyverse)
   Table3 <-
     
     full_output %>%
+    filter(model != "CVmaxnet" ) %>%
     group_by(model) %>%
     summarise('median training AUC' = na.omit(full_AUC) %>% median(),
               'mean training AUC' = na.omit(full_AUC) %>% mean(),
@@ -187,6 +191,7 @@ library(tidyverse)
   # Table 3 for small sample sizes only
   Table3_sss <-
     full_output %>%
+    filter(model != "CVmaxnet" ) %>%
     filter(n_presence <= 20) %>%
     group_by(model) %>%
     summarise('median training AUC' = na.omit(full_AUC) %>% median(),
@@ -228,6 +233,7 @@ library(tidyverse)
   # plot to identify full-rank
   
   full_output %>%
+    filter(model != "CVmaxnet" ) %>%
     ggplot(mapping = aes(x = n_presence,
                          y = pa_AUC))+
     geom_point()+
@@ -560,7 +566,8 @@ library(tidyverse)
         pull(model) -> small_sample_comparable_to_maxnet
       
       small_samples_models_v_maxent %>%
-        dplyr::select(model,W,pval) %>%
+        filter(model != "CVmaxnet" ) %>%
+        select(model,W,pval) %>%
         arrange(-pval)%>%
         write.csv(file = "tables/small_sample_size_comparison_to_maxnet.csv",
                   row.names = FALSE)
@@ -572,6 +579,7 @@ library(tidyverse)
       #Overall comparison
       
       full_output %>%
+        filter(model != "CVmaxnet" ) %>%
         mutate(model = factor(model,
                               levels = full_output %>%
                                 group_by(model) %>%
@@ -579,7 +587,7 @@ library(tidyverse)
                                 arrange(sm) %>%
                                 pull(model))) %>%
         filter(model %in% all_sample_comparable_to_maxnet ) %>%
-        dplyr::select(model,pa_AUC,pa_specificity,pa_sensitivity) %>%
+        select(model,pa_AUC,pa_specificity,pa_sensitivity) %>%
         pivot_longer(contains("pa_"),names_to = "metric") %>%
         mutate(metric = gsub(pattern = "pa_",replacement = "",x =metric))%>%
         ggplot(mapping = aes(x=model,y=value))+
@@ -709,6 +717,7 @@ full_output %>%
     # Table of best performance by model type
       
   full_output %>%
+        filter(model != "CVmaxnet" ) %>%
         group_by(species) %>%
         mutate(max_pa_AUC = max(pa_AUC,na.rm = TRUE)) %>%
         ungroup() %>%
@@ -719,13 +728,15 @@ full_output %>%
         group_by(model) %>%
         summarise(times_won = n()) %>%
         mutate(pct_won = times_won/length(unique(full_output$species))*100)%>%
-        arrange(-times_won)
+        arrange(-times_won)->times_won_table
 
+      sum(times_won_table$pct_won)
       
 # Table of best performance by model type, small sample size
       
       
       full_output %>%
+        filter(model != "CVmaxnet" ) %>%
         filter(n_presence <= 20) %>%
         group_by(species) %>%
         mutate(max_pa_AUC = max(pa_AUC,na.rm = TRUE)) %>%
@@ -734,8 +745,20 @@ full_output %>%
         arrange(species) %>%
         filter(max_pa_AUC == pa_AUC) %>%
         unique() %>%
+        mutate(n_focal_species = n())%>%
         group_by(model) %>%
-        summarise(times_won = n()) %>%
-        mutate(pct_won = times_won/length(unique(full_output$species))*100)%>%
-        arrange(-times_won)
-              
+        reframe(times_won = n(),
+                  pct_won = n()/n_focal_species*100) %>%
+        unique()%>%
+        arrange(-times_won)->times_won_table_ssss
+
+      sum(times_won_table_ssss$pct_won)
+      
+      full_output %>%
+        filter(model != "CVmaxnet" ) %>%
+        filter(n_presence <= 20)%>%
+        pull(species)%>%
+        unique()%>%
+        length()
+      
+                    
