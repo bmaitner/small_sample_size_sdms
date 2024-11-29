@@ -1,7 +1,7 @@
 "model","prediction accuracy","specificity","sensitivity","kappa"
 "ensemble all votes",0.825,0.979,0.064,0.046
 "kde/kde",0.82,0.97,0.089,0.061
-"ensemble mean",0.741,0.852,0.247,0.056
 "rulsif",0.725,0.791,0.348,0.081
-"maxnet",0.645,0.658,0.599,0.109
-"ensemble any votes",0.622,0.608,0.648,0.099
+"maxnet",0.651,0.667,0.593,0.11
+"ensemble any votes",0.626,0.614,0.643,0.1
+"ensemble mean",0.586,0.564,0.572,0.041
