@@ -28,6 +28,8 @@ model_vector = c("maxnet",
                  "rulsif",
                  "ulsif",
                  "gaussian/kde",
+                 "gaussian/vine",
+                 "gaussian/rangebagging",
                  "vine/vine",
                  "kde/vine",
                  "kde/gaussian"
@@ -38,9 +40,7 @@ model_vector = c("maxnet",
 
 #Lower priority stuff to add                     
   # "rangebagging/rangebagging"
-  # "gaussian/rangebagging"
   # "kde/rangebagging"
-  # "gaussian/vine"
   # "vine/rangebagging"
   # "vine/gaussian"
   # "vine/kde"

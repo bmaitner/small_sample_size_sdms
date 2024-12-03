@@ -235,7 +235,7 @@ source("R/evaluate_disdat_ensemble.R")
      mutate(model = gsub(pattern = "_",replacement =" ",x=model))%>%
      mutate(metric = gsub(pattern = "_",replacement =" ",x=metric))%>%
      mutate(model = factor(x=model,levels = c("ensemble all votes","kde/kde",
-                                              "ensemble mean","rulsif",
+                                              "rulsif","ensemble mean",
                                               "maxnet","ensemble any votes")))%>%
      mutate(metric = factor(x=metric,levels = c("sensitivity","specificity","prediction accuracy")))%>%
     filter(n_presence <= 20)%>%
