@@ -8,6 +8,7 @@ library(confintr)
 
 library(tidyverse)
 library(ggplot2)
+library(ggpubr)
 library(tidyverse)
 
 # Load and format full data
@@ -262,6 +263,7 @@ bind_rows(
 
 
 # Plot of correlations
+correlations_training_vs_pa <-
 metric_corr_data %>%
   ggplot(mapping = aes(x = full_value,
                        y = pa_value))+
@@ -272,3 +274,7 @@ metric_corr_data %>%
   theme_bw()+
   xlab("Value (Training Data)")+
   ylab("Value (P/A Data)")
+
+ggsave(filename = "figures/training_vs_pa_metric_correlations.jpeg",
+       plot = correlations_training_vs_pa,
+       dpi = 600,width = 10,height = 5,units = "in")

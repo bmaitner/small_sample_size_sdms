@@ -9,6 +9,7 @@ library(pbsdm)
 library(sf)
 library(terra)
 library(tidyterra)
+library(tidyverse)
 source("C:/Users/Brian Maitner/Desktop/current_projects/pbsdm/R/get_env_pres.R")
 source("C:/Users/Brian Maitner/Desktop/current_projects/pbsdm/R/get_env_bg.R")
 # Make a temporary directory to store climate data
@@ -34,6 +35,8 @@ env <- env[[c(1)]]
 
 #First, we'll select the background data
 
+
+library(pbsdm)
 tv_bg <- get_env_bg(coords = tv[c("longitude","latitude")],
                     env = env,
                     width = 500000,
@@ -46,12 +49,21 @@ tv_bg <- get_env_bg(coords = tv[c("longitude","latitude")],
 # Next, we get the presence data:
 
 tv_presence <- get_env_pres(coords = tv[c("longitude","latitude")],
-                            env = env,
-                            env_bg = tv_bg)
+                            env = env)
 
 tv_gaussian <- fit_plug_and_play(presence = tv_presence$env,
                                 background = tv_bg$env,
                                 method = "gaussian")
+
+
+tv_rb <- fit_plug_and_play(presence = tv_presence$env[1:6,],
+                                 background = tv_bg$env,
+                                 presence_method = "rangebagging",
+                                 background_method = "none")
+
+pbsdm:::pnp_rangebagging(data = tv_presence$env[1:5,],v = 100,d = 2,p = 0.5,method="fit")
+
+
 
 tv_gaussian_predictions <- project_plug_and_play(pnp_model = tv_gaussian,
                                                 data = tv_bg$env)
@@ -115,3 +127,110 @@ background_dist <- pbsdm:::pnp_gaussian(data = tv_bg$env,
 
 
 
+# version of fig 2 with presence and background points
+tv_presence$env
+    
+pb_points <- data.frame(temp = tv_presence$env$wc2.1_10m_bio_1,
+                        Point = "Presence",
+                        values = -.2)%>%
+  bind_rows(data.frame(temp = tv_bg$env$wc2.1_10m_bio_1,
+                       Point = "Background",
+                       values = -.5))
+
+fig2_v2 <-
+plot_data %>%
+  ggplot(mapping = aes(x = temp,
+                       y = values,
+                       color = dist))+
+  
+  geom_vline(data = pb_points %>%
+               filter(Point == "Background"),
+             mapping = aes(xintercept=temp),color="lightgrey")+
+  
+  geom_vline(data = pb_points %>%
+               filter(Point == "Presence"),
+             mapping = aes(xintercept=temp),color="black")+
+
+  geom_line(linewidth=2)+
+  xlab(expression('Temperature ('*~degree*C*')'))+
+  ylab("Relative Occurrence Rate\n(or Density)")+
+  scale_color_manual(values=c("magenta", "#70ffdf", "#9d4dff"),
+                     labels=c("Relative\nOccurrence\nRate",
+                              "Presence",
+                              "Background"))+
+  # geom_vline(xintercept = min(tv_presence$env),lty=2)+
+  # geom_vline(xintercept = max(tv_presence$env),lty=2)+
+  # geom_vline(xintercept = min(tv_bg$env),lty=1)+
+  # geom_vline(xintercept = max(tv_bg$env),lty=1)+
+  scale_x_continuous(expand=c(0,0))+
+  theme_bw()+
+  theme(legend.title=element_blank())
+  #+
+  # geom_point(data = pb_points%>%
+  #              filter(Point == "Presence"),
+  #            mapping = aes(x=temp,y=values),
+  #            inherit.aes = FALSE,
+  #            alpha=0.1)
+  #+
+
+
+    # geom_jitter(data = pb_points%>%
+    #               filter(Point == "Presence"),
+    #             mapping = aes(x=temp,y=values),
+    #             inherit.aes = FALSE,
+    #             height = 0.1)
+
+ggsave(filename = "figures/Figure2v2.jpg",
+       plot = fig2_v2,
+       width = 6,
+       height = 4,
+       units = "in")    
+
+
+######################################
+
+
+fig2_v3 <-
+  plot_data %>%
+  ggplot(mapping = aes(x = temp,
+                       y = values,
+                       color = dist))+
+  geom_line(linewidth=2)+
+  xlab(expression('Temperature ('*~degree*C*')'))+
+  ylab("Relative Occurrence Rate\n(or Density)")+
+  scale_color_manual(values=c("magenta", "#70ffdf", "#9d4dff"),
+                     labels=c("Relative\nOccurrence\nRate",
+                              "Presence",
+                              "Background"))+
+  # geom_vline(xintercept = min(tv_presence$env),lty=2)+
+  # geom_vline(xintercept = max(tv_presence$env),lty=2)+
+  # geom_vline(xintercept = min(tv_bg$env),lty=1)+
+  # geom_vline(xintercept = max(tv_bg$env),lty=1)+
+  scale_x_continuous(expand=c(0,0))+
+  theme_bw()+
+  theme(legend.title=element_blank())+
+  # geom_point(data = pb_points%>%
+  #              filter(Point == "Presence"),
+  #            mapping = aes(x=temp,y=values),
+  #            inherit.aes = FALSE,
+  #            alpha=0.1)+
+  geom_jitter(data = pb_points%>%
+                filter(Point == "Presence"),
+              mapping = aes(x=temp,y=values),
+              inherit.aes = FALSE,
+              height = 0.1)+
+  geom_jitter(data = pb_points%>%
+                filter(Point == "Background")%>%
+                slice_sample(n = 1000),
+              mapping = aes(x=temp,y=values),
+              inherit.aes = FALSE,
+              height = 0.1,
+              color="darkgrey")
+
+fig2_v3
+
+ggsave(filename = "figures/Figure2v3.jpg",
+       plot = fig2_v3,
+       width = 6,
+       height = 4,
+       units = "in")    

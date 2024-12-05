@@ -470,7 +470,7 @@ library(tidyverse)
       
         
 ##############
-      
+  
       
       # Mann-Whitney test for comparison of aucs with maxnet (doesn't require a gaussian dist)
       
@@ -569,8 +569,72 @@ library(tidyverse)
         filter(model != "CVmaxnet" ) %>%
         select(model,W,pval) %>%
         arrange(-pval)%>%
+        mutate(pval = round(pval,3)) %>%
         write.csv(file = "tables/small_sample_size_comparison_to_maxnet.csv",
                   row.names = FALSE)
+    
+      models_v_maxent %>%
+        filter(model != "CVmaxnet" ) %>%
+        select(model,W,pval) %>%
+        arrange(-pval)%>%
+        mutate(pval = round(pval,3)) %>%
+        write.csv(file = "tables/all_sample_size_comparison_to_maxnet.csv",
+                  row.names = FALSE)
+      
+        
+##################
+      
+  # which models are significantly different from the best performing in each class?
+      
+  source("R/sig_different_by_column.R")    
+      
+      full_output %>%
+        select(-n_presence,-n_background,-bg_method,-pres_method,-ratio_method,
+               -n_pa_absence,-n_pa_presence,-species)%>%
+        select(model,contains("pa_"))%>%
+        sig_different_by_column(filter_by = "pa_AUC")->all_sample_comparable_to_best
+      
+  write.csv(x = all_sample_comparable_to_best$p_val_table,
+            file = "tables/all_samples_comparable_to_best_pval.csv",
+            row.names = FALSE)
+      
+  write.csv(x = all_sample_comparable_to_best$W_table,
+            file = "tables/all_samples_comparable_to_best_W.csv",
+            row.names = FALSE)
+  
+  all_sample_comparable_to_best$p_val_table %>%
+    filter(pa_AUC > 0.05)->all_value_useful_models
+  
+    
+  full_output %>%
+    filter(n_presence <= 20) %>%
+    select(-n_presence,-n_background,-bg_method,-pres_method,-ratio_method,
+           -n_pa_absence,-n_pa_presence,-species)%>%
+    select(model,contains("pa_"))%>%
+    sig_different_by_column(filter_by = "pa_AUC") -> ssss_sample_comparable_to_best
+    
+  
+  full_output %>%
+    filter(n_presence <= 20) %>%
+    select(-n_presence,-n_background,-bg_method,-pres_method,-ratio_method,
+           -n_pa_absence,-n_pa_presence,-species)%>%
+    select(model,contains("pa_"))%>%
+    sapply(function(y){ sum(length(which(is.na(y))))/length(y)})
+  
+    
+  full_output %>%
+    filter(n_presence <= 20) %>%
+    select(-n_presence,-n_background,-bg_method,-pres_method,-ratio_method,
+           -n_pa_absence,-n_pa_presence,-species)%>%
+    select(model,contains("pa_"))%>%
+    pivot_longer(cols = 2:10)
+  
+  sum(is.na(full_output$full_pAUC_specificity))/nrow(full_output)
+
+  
+  ssss_sample_comparable_to_best$p_val_table %>%
+    filter(pa_AUC > 0.05)%>% mutate(model2=model)-> ssss_useful_models
+  
       
 ##################
   
@@ -760,5 +824,30 @@ full_output %>%
         pull(species)%>%
         unique()%>%
         length()
+
+#####################################
+    
+    # Table of model poorness
+
+poor_ssss_model_table <-      
+full_output %>%
+        filter(n_presence <= 20) %>%
+        group_by(model)%>%
+        summarise(pct_na_sens = round((sum(is.na(pa_sensitivity))/n())*100),
+                  pct_na_spec = round((sum(is.na(pa_specificity))/n())*100),
+                  pct_na_auc =round(( sum(is.na(pa_AUC))/n())*100),
+                  pct_bad_aucs = round(((sum(pa_AUC < 0.5,na.rm = TRUE)+sum(is.na(pa_AUC)))/n())*100))
+
+poor_ssss_model_table %>%
+  arrange(pct_bad_aucs)%>%      
+write.csv(file = "tables/poor_model_performance_table_ssss.csv",
+          row.names = FALSE)      
       
-                    
+poor_model_table <-      
+  full_output %>%
+#  filter(n_presence <= 20) %>%
+  group_by(model)%>%
+  summarise(pct_na_sens = round((sum(is.na(pa_sensitivity))/n())*100),
+            pct_na_spec = round((sum(is.na(pa_specificity))/n())*100),
+            pct_na_auc =round(( sum(is.na(pa_AUC))/n())*100),
+            pct_bad_aucs = round(((sum(pa_AUC < 0.5,na.rm = TRUE)+sum(is.na(pa_AUC)))/n())*100))

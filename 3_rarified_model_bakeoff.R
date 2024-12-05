@@ -21,20 +21,20 @@ source("R/rarified_eval_disdat.R")
 
 model_vector = c("maxnet",
                  "rangebagging/none",
-                 "kde/kde",
-                 "gaussian/gaussian",
-                 "gaussian/none",
                  "kde/none",
-                 "rulsif",
-                 "ulsif",
+                 "kde/kde",
+                 "kde/vine",
+                 "kde/gaussian",
+                 "gaussian/none",
+                 "gaussian/gaussian",
                  "gaussian/kde",
                  "gaussian/vine",
                  "gaussian/rangebagging",
+                 "rulsif",
+                 "ulsif",
                  "vine/vine",
-                 "kde/vine",
-                 "kde/gaussian"
+                 "vine/none"    # need debugging AUC calc
                  #"lobagoc/none" # need debugging AUC calc
-                 ,"vine/none"    # need debugging AUC calc
                  ) #need to add more selected models to this
 
 
@@ -60,7 +60,8 @@ if(file.exists("outputs/temp_rarified_fold.RDS")){
             overwrite = TRUE)
 }
 
-rarified_eval_disdat(presence_vector = (1:10)^2,
+#rarified_eval_disdat(presence_vector = (1:10)^2,
+rarified_eval_disdat(presence_vector = (1:4)^2, #only keeping those below 20 for now, will increase later
                      n_reps = 3,
                      model_vector,
                      quantile = 0.05,
