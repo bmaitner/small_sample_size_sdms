@@ -250,9 +250,12 @@ source("R/evaluate_disdat_ensemble.R")
      facet_wrap(~metric,ncol = 1)+
      theme_bw()+
      xlab(NULL)+
-     ylab(NULL)
+     ylab(NULL) -> ensemble_figure
+
+ggsave(filename = "figures/ensemble_metrics.jpg",
+       plot = ensemble_figure,width = 10,height = 5,units = "in",dpi = 600)
    
-   
+      
 # Need a table equivalent to table 3 for ensembles
    
    

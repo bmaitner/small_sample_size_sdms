@@ -896,7 +896,66 @@ write.csv(x = full_model_summary_by_pa_AUC,
 
 colnames(full_model_output_all)
 
+########################
 
+library(tidyverse)
+
+library(ggrepel)
+
+temp<-
+full_model_output_all %>%
+  #filter(n_presence <= 20)%>%
+  filter(method %in% c("kde / none","vine / none","gaussian / none",
+                      "maxnet","ulsif","rulsif",
+                      "rangebagging / none","lobagoc / none"))%>%
+  mutate(method = gsub(pattern = " / none",replacement = "",x=method))%>%
+  mutate(method = gsub(pattern = "maxnet",replacement = "Maxnet",x=method))%>%
+  mutate(method = gsub(pattern = "vine",replacement = "Vine",x=method))%>%
+  mutate(method = gsub(pattern = "gaussian",replacement = "Gaussian",x=method))%>%
+  mutate(method = gsub(pattern = "kde",replacement = "KDE",x=method))%>%
+  mutate(method = gsub(pattern = "rangebagging",replacement = "Range-Bagging",x=method))%>%
+  mutate(method = gsub(pattern = "ulsif",replacement = "uLSIF",x=method))%>%
+  mutate(method = gsub(pattern = "lobagoc",replacement = "LOBAG-OC",x=method))%>%
+  mutate(sens_spec_ratio = pa_specificity-pa_sensitivity) %>%
+  group_by(method)%>%
+  summarise(sens_spec_ratio = median(na.omit(sens_spec_ratio)))%>%
+  ggplot(mapping = aes(x=sens_spec_ratio,y=0,label = method))+
+  geom_hline(yintercept = 0)+
+  geom_point()+
+  geom_text_repel(max.overlaps = 20,box.padding = 1)+
+  xlab("Sensitivity - Specificity")+
+  ylab(NULL)+
+  ylim(c(-.5,.5))+
+  xlim(c(-1,1))+
+  theme_bw()+
+  guides(color="none")+
+  theme(axis.ticks.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.text.y = element_blank(),
+        line = element_blank(),
+        axis.title =element_text(size = 15))
+  
+temp
+
+text_high_spec <- textGrob("High Specificity\nPresences Correct\nAssumes good sampling",)
+text_high_sens <- textGrob("High Sensitivity\nAbsences Correct\nAssumes poor sampling")
+
+
+sens_spec_gradient<-
+temp+
+  annotation_custom(text_high_sens,xmin=-1,xmax=-0.5,ymin=-1,ymax=-.65)+
+  annotation_custom(text_high_spec,xmin=0.5,xmax=1,ymin=-1,ymax=-.65)+
+  theme(plot.margin = unit(c(1,1,1,1), "lines")) + #top,right,bottom,left
+  theme(plot.margin = unit(c(1,1,6,1), "lines")) + #top,right,bottom,left
+  coord_cartesian(ylim=c(-.4,.4), clip="off")
+
+sens_spec_gradient
+
+ggsave(plot = sens_spec_gradient,filename = "figures/sens_spec_gradient.jpg",
+       width = 6,height = 4,units = "in",dpi = 600)
+
+ggsave(plot = sens_spec_gradient,filename = "figures/sens_spec_gradient.svg",
+       width = 6,height = 4,units = "in",dpi = 600)
 
 
 
