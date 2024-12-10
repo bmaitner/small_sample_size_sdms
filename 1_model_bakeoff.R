@@ -957,5 +957,30 @@ ggsave(plot = sens_spec_gradient,filename = "figures/sens_spec_gradient.jpg",
 ggsave(plot = sens_spec_gradient,filename = "figures/sens_spec_gradient.svg",
        width = 6,height = 4,units = "in",dpi = 600)
 
+################
+
+#How many time does lobagoc beat maxnet?
+
+full %>%
+  filter(method %in% c("rangebagging / none","maxnet")) %>%
+  group_by(species)%>%
+  arrange(species,pa_AUC)%>%
+  slice_head(n = 1)%>%
+  ungroup()%>%
+  select(method)%>%
+  table()
+
+#88/(88+138) #39%
 
 
+full %>%
+  filter(method %in% c("lobagoc / none","maxnet")) %>%
+  group_by(species)%>%
+  arrange(species,desc(pa_AUC))%>%
+  select(species,method,pa_AUC)%>%
+  slice_head(n = 1)%>%
+  ungroup()%>%
+  select(method)%>%
+  table()
+
+  #45/(45+181) #20%
