@@ -1,0 +1,34 @@
+"method","median_runtime"
+"gaussian / none",0.002
+"kde / none",0.006
+"gaussian / gaussian",0.044
+"kde / gaussian",0.073
+"rangebagging / none",0.119
+"rangebagging / gaussian",0.207
+"lobagoc / none",0.455
+"lobagoc / gaussian",0.465
+"gaussian / rangebagging",0.71
+"kde / rangebagging",0.805
+"rangebagging / rangebagging",0.835
+"lobagoc / rangebagging",1.117
+"vine / gaussian",1.94
+"vine / none",2.016
+"vine / rangebagging",2.745
+"maxnet",4.966
+"rulsif",21.328
+"lobagoc / lobagoc",30.98
+"ulsif",31.944
+"rangebagging / lobagoc",32.309
+"vine / lobagoc",34.263
+"kde / lobagoc",34.264
+"gaussian / lobagoc",37.608
+"gaussian / kde",43.359
+"lobagoc / kde",44.576
+"kde / kde",44.69
+"rangebagging / kde",44.943
+"vine / kde",45.905
+"lobagoc / vine",295.325
+"gaussian / vine",300.5
+"kde / vine",302.508
+"vine / vine",310.251
+"rangebagging / vine",310.922
