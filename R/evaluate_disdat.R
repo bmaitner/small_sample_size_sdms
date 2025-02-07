@@ -111,12 +111,12 @@ evaluate_disdat <- function(presence_method = NULL,
       
 
         presence_s[,7:ncol(presence_s)] <-
-        pbsdm:::rescale_w_objects(data = presence_s[,7:ncol(presence_s)],
+        S4DM:::rescale_w_objects(data = presence_s[,7:ncol(presence_s)],
                           mean_vector = bg_means,
                           sd_vector = bg_sd)
         
         background_s[,7:ncol(presence_s)] <-
-          pbsdm:::rescale_w_objects(data = background_s[,7:ncol(presence_s)],
+          S4DM:::rescale_w_objects(data = background_s[,7:ncol(presence_s)],
                             mean_vector = bg_means,
                             sd_vector = bg_sd)
 
@@ -179,7 +179,7 @@ evaluate_disdat <- function(presence_method = NULL,
       
       
       out <- foreach(fold = 1:length(unique(presence_data$fold)),
-                     .packages = c("pbsdm","tidyverse","DescTools"),
+                     .packages = c("S4DM","tidyverse","DescTools"),
                      .combine = "rbind") %dopar% {
                        
                        if(verbose){message(paste("Starting fold ",fold, " of ",length(unique(presence_data$fold))))}
@@ -319,7 +319,7 @@ evaluate_disdat <- function(presence_method = NULL,
                        names(fold_pres) <- "env"
                        
                        
-                       response_curves <- get_response_curves(env_bg = fold_bg,
+                       response_curves <- S4DM:::get_response_curves(env_bg = fold_bg,
                                                               env_pres = fold_pres,
                                                               pnp_model = model_fold,
                                                               n.int = 1000)
@@ -557,7 +557,7 @@ evaluate_disdat <- function(presence_method = NULL,
           names(full_pres) <- "env"
         
         
-        response_curves_full <- get_response_curves(env_bg = full_bg,
+        response_curves_full <- S4DM:::get_response_curves(env_bg = full_bg,
                                                env_pres = full_pres,
                                                pnp_model = model_full,
                                                n.int = 1000)
@@ -656,7 +656,7 @@ evaluate_disdat <- function(presence_method = NULL,
       # rescale presence abscence data
       
         pres_abs_data_s[,5:ncol(pres_abs_data_s)] <-
-          pbsdm:::rescale_w_objects(data = pres_abs_data_s[,5:ncol(pres_abs_data_s)],
+          S4DM:::rescale_w_objects(data = pres_abs_data_s[,5:ncol(pres_abs_data_s)],
                             mean_vector = bg_means,
                             sd_vector = bg_sd)
       

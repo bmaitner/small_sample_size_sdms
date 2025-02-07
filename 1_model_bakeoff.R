@@ -4,7 +4,7 @@ library(AUC)
 library(rvinecopulib)
 library(pROC)
 library(lemon)
-library(pbsdm)
+library(S4DM)
 library(kernlab)
 library(tidyverse)
 library(sf)
@@ -50,6 +50,8 @@ fold_model_outputs <- NULL
 tempfile_full <- "outputs/temp_bakeoff_output_full.rds"
 tempfile_fold <- "outputs/temp_bakeoff_output_fold.rds"
   
+
+
   for(i in 1:nrow(models_to_evaluate)){
     
     # If the temporary output files exist, check to see what they contain
