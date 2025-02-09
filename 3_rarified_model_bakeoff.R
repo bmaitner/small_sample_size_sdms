@@ -4,7 +4,7 @@ library(AUC)
 library(rvinecopulib)
 library(pROC)
 library(lemon)
-library(pbsdm)
+library(S4DM)
 library(tidyverse)
 library(sf)
 library(DescTools)
@@ -33,8 +33,8 @@ model_vector = c("maxnet",
                  "rulsif",
                  "ulsif",
                  "vine/vine",
-                 "vine/none"    # need debugging AUC calc
-                 #"lobagoc/none" # need debugging AUC calc
+                 "vine/none",    # need debugging AUC calc
+                 "lobagoc/none" # need debugging AUC calc
                  ) #need to add more selected models to this
 
 
