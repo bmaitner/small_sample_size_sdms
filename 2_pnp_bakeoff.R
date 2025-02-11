@@ -1,4 +1,4 @@
-# 2a pnp bakeoff analyses
+# 2 pnp bakeoff analyses
 
 # Load libraries
 
@@ -83,8 +83,8 @@ library(tidyverse)
   
 ##################################  
 
-  # Table 1 for small sample sizes only
-  Table1_sss <-
+  # Table 2: as table 1, but limited to small sample sizes only
+  Table2 <-
   full_output %>%
     filter(model != "CVmaxnet" ) %>%
     filter(n_presence <= 20) %>%
@@ -100,373 +100,14 @@ library(tidyverse)
               'mean PA kappa' = na.omit(pa_kappa) %>% mean()) %>%
     arrange(-`mean PA AUC`)
   
-  Table1_sss[2:ncol(Table1_sss)] <- Table1_sss[2:ncol(Table1_sss)] %>% round(digits = 3)
-  
-  Table1_sss %>%
-    write.csv(file = "tables/Table1_sss.csv",
-              row.names = FALSE)
-  
-######################################################################
-  
-  # Table 2: performance ranked with CV data
-  
-  Table2 <-
-    
-    fold_output %>%
-    filter(model != "CVmaxnet" ) %>%
-    group_by(model) %>%
-    summarise('median testing AUC' = na.omit(testing_AUC) %>% median(),
-              'mean testing AUC' = na.omit(testing_AUC) %>% mean(),
-              'mean testing sensitivity' = na.omit(testing_sensitivity) %>% mean(),
-              'mean testing specificity' = na.omit(testing_specificity) %>% mean(),
-              'mean testing pAUC (sensitivity 0.8 - 1)' = na.omit(testing_pAUC_sensitivity) %>% mean(),
-              'mean testing pAUC (specificity 0.8 -1)' = na.omit(testing_pAUC_specificity) %>% mean(),
-              'mean testing prediction accuracy' = na.omit(testing_prediction_accuracy) %>% mean(),
-              'mean testing correlation' = na.omit(testing_correlation) %>% mean(),
-              'mean testing kappa' = na.omit(testing_kappa) %>% mean()) %>%
-    arrange(-`mean testing AUC`)
-  
   Table2[2:ncol(Table2)] <- Table2[2:ncol(Table2)] %>% round(digits = 3)
   
   Table2 %>%
     write.csv(file = "tables/Table2.csv",
               row.names = FALSE)
   
-  
-  
 ######################################################################
   
-  
-  
-  Table2_sss <-
-    fold_output %>%
-    filter(model != "CVmaxnet" ) %>%
-    filter(n_presence <= 20) %>%
-    group_by(model) %>%
-    summarise('median testing AUC' = na.omit(testing_AUC) %>% median(),
-              'mean testing AUC' = na.omit(testing_AUC) %>% mean(),
-              'mean testing sensitivity' = na.omit(testing_sensitivity) %>% mean(),
-              'mean testing specificity' = na.omit(testing_specificity) %>% mean(),
-              'mean testing pAUC (sensitivity 0.8 - 1)' = na.omit(testing_pAUC_sensitivity) %>% mean(),
-              'mean testing pAUC (specificity 0.8 -1)' = na.omit(testing_pAUC_specificity) %>% mean(),
-              'mean testing prediction accuracy' = na.omit(testing_prediction_accuracy) %>% mean(),
-              'mean testing correlation' = na.omit(testing_correlation) %>% mean(),
-              'mean testing kappa' = na.omit(testing_kappa) %>% mean()) %>%
-    arrange(-`mean testing AUC`)
-  
-  Table2_sss[2:ncol(Table2_sss)] <- Table2_sss[2:ncol(Table2_sss)] %>% round(digits = 3)
-  
-  Table2_sss %>%
-    write.csv(file = "tables/Table2_sss.csv",
-              row.names = FALSE)
-
-######################################################################
-  
-  # Evaluating on full models
-  
-  Table3 <-
-    
-    full_output %>%
-    filter(model != "CVmaxnet" ) %>%
-    group_by(model) %>%
-    summarise('median training AUC' = na.omit(full_AUC) %>% median(),
-              'mean training AUC' = na.omit(full_AUC) %>% mean(),
-              'mean training sensitivity' = na.omit(full_sensitivity) %>% mean(),
-              'mean training specificity' = na.omit(full_specificity) %>% mean(),
-              'mean training pAUC (sensitivity 0.8 - 1)' = na.omit(full_pAUC_specificity) %>% mean(),
-              'mean training pAUC (specificity 0.8 -1)' = na.omit(full_pAUC_specificity) %>% mean(),
-              'mean training prediction accuracy' = na.omit(full_prediction_accuracy) %>% mean(),
-              'mean training correlation' = na.omit(full_correlation) %>% mean(),
-              'mean training kappa' = na.omit(full_kappa) %>% mean()) %>%
-    arrange(-`mean training AUC`)
-  
-  Table3[2:ncol(Table3)] <- Table3[2:ncol(Table3)] %>% round(digits = 3)
-  
-  Table3 %>%
-    write.csv(file = "tables/Table3.csv",
-              row.names = FALSE)
-  
-##################################  
-  
-  # Table 3 for small sample sizes only
-  Table3_sss <-
-    full_output %>%
-    filter(model != "CVmaxnet" ) %>%
-    filter(n_presence <= 20) %>%
-    group_by(model) %>%
-    summarise('median training AUC' = na.omit(full_AUC) %>% median(),
-              'mean training AUC' = na.omit(full_AUC) %>% mean(),
-              'mean training sensitivity' = na.omit(full_sensitivity) %>% mean(),
-              'mean training specificity' = na.omit(full_specificity) %>% mean(),
-              'mean training pAUC (sensitivity 0.8 - 1)' = na.omit(full_pAUC_specificity) %>% mean(),
-              'mean training pAUC (specificity 0.8 -1)' = na.omit(full_pAUC_specificity) %>% mean(),
-              'mean training prediction accuracy' = na.omit(full_prediction_accuracy) %>% mean(),
-              'mean training correlation' = na.omit(full_correlation) %>% mean(),
-              'mean training kappa' = na.omit(full_kappa) %>% mean()) %>%
-    arrange(-`mean training AUC`)
-  
-  Table3_sss[2:ncol(Table3_sss)] <- Table3_sss[2:ncol(Table3_sss)] %>% round(digits = 3)
-  
-  Table3_sss %>%
-    write.csv(file = "tables/Table3_sss.csv",
-              row.names = FALSE)
-  
-#############################################################################
-  
-  # stats on model performance
-  
-    # function to wrangle marginal effects
-    
-      library(margins)
-  
-      get_marg_df <- function(model){
-        
-        data.frame(response = model$formula[[2]] %>% as.character(),
-                   model %>% margins() %>% summary())
-      }
-  
-    # function to wrangle interaction effects
-      
-      source("R/get_int_effects.R")
-
-  
-  # plot to identify full-rank
-  
-  full_output %>%
-    filter(model != "CVmaxnet" ) %>%
-    ggplot(mapping = aes(x = n_presence,
-                         y = pa_AUC))+
-    geom_point()+
-    facet_grid(pres_method ~ bg_method)
-  
-  
-  library(betareg)
-  library(glmmTMB)
-  library(pscl)
-  
-  # set up data for marginal
-  
-  marginal_stats <-NULL
-  int_stats <- NULL  
-
-#AUC
-    betareg(data = full_output %>%
-              filter(!is.na(pres_method))%>%
-              mutate(n_presence = log10(n_presence))%>%
-              filter(!bg_method %in% c("lobagoc")) %>%
-              dplyr::select(pa_AUC,pres_method,bg_method,n_presence)%>%
-              na.omit() %>%
-              unique(),
-            formula = pa_AUC ~ pres_method + bg_method + n_presence
-            + n_presence*pres_method
-            + pres_method*bg_method,
-            #link = "logit",
-            type="BR") -> AUC_model
-  
-  
-    glmmTMB(data = full_output %>%
-              filter(!is.na(pres_method))%>%
-              mutate(n_presence = log10(n_presence))%>%
-              filter(!bg_method %in% c("lobagoc")) %>%
-              dplyr::select(pa_AUC,pres_method,bg_method,n_presence)%>%
-              na.omit() %>%
-              unique(),
-            formula = pa_AUC ~ pres_method + bg_method + n_presence
-            + n_presence*pres_method
-            + pres_method*bg_method,
-            family = beta_family()) -> AUC_model_alt
-
-    #pseudor2 = ~.11
-
-    summary(AUC_model)
-
-      marginal_stats <-
-        bind_rows(marginal_stats,
-          data.frame(get_marg_df(AUC_model),
-                     model_r2 = AUC_model$pseudo.r.squared))
-      
-      int_stats <-
-        bind_rows(int_stats,
-                  data.frame(get_int_effects(model = AUC_model_alt))
-                  )
-
-#spec (need to use a model that includes 0 and 1)
-
-      glm(data = full_output %>%
-            filter(!is.na(pres_method))%>%
-            mutate(n_presence = log10(n_presence)) %>%
-          rowwise()%>%
-          mutate(n_pa_pts_total = sum(n_pa_absence+n_pa_presence))%>%
-          # filter(!pres_method %in% c("vine", "lobagoc"),
-          #        !bg_method %in% c("lobagoc", "vine")) %>%
-           dplyr::select(pa_sensitivity,pres_method,bg_method,n_presence,n_pa_pts_total,species)%>%
-          na.omit() %>%
-          unique(),
-        formula = pa_sensitivity ~ pres_method + bg_method + n_presence
-        + n_presence*pres_method
-        + pres_method*bg_method,
-        family = "binomial"
-        #,weights = n_pa_pts_total
-        ) -> sens_model
-      
-      summary(sens_model)
-      
-      marginal_stats <-
-        bind_rows(marginal_stats,
-          data.frame(get_marg_df(sens_model),
-                     model_r2 = pR2(sens_model)['McFadden']))
-      
-      int_stats <-
-        bind_rows(int_stats,
-                  data.frame(get_int_effects(model = sens_model))
-                  )
-      
-      
-    glm(data = full_output %>%
-          mutate(n_presence = log10(n_presence))%>%
-          rowwise()%>%
-          mutate(n_pa_pts_total = sum(n_pa_absence+n_pa_presence))%>%
-          # filter(!pres_method %in% c("vine","lobagoc"),
-          #        !bg_method %in% c("lobagoc","vine")) %>%
-           dplyr::select(pa_specificity,pres_method,bg_method,n_presence,n_pa_pts_total)%>%
-          na.omit() %>%
-          unique(),
-        formula = pa_specificity ~ pres_method + bg_method + n_presence
-        + n_presence*pres_method
-        + pres_method*bg_method,
-        family = "binomial"
-        #,weights = n_pa_pts_total
-        ) -> spec_model
-    
-        marginal_stats <-
-          bind_rows(marginal_stats,
-                    data.frame(get_marg_df(spec_model),
-                               model_r2 = pR2(spec_model)['McFadden']))
-
-        int_stats <-
-          bind_rows(int_stats,
-                    data.frame(get_int_effects(model = spec_model))
-          )
-        
-        # Marginal plots to ask how (in general) they're different 
-
-        
-
-        marginal_stats %>%
-          mutate(plot_order = case_when(str_detect(factor,"bg") ~ 3,
-                                  str_detect(factor,"pres_meth") ~ 2,
-                                  str_detect(factor,"n_pres") ~ 1))%>%
-          mutate(factor = gsub(pattern = "n_presence",replacement = "N Presence",x=factor))%>%
-          mutate(factor = gsub(pattern = "pres_method",replacement = "Pres:",x=factor))%>%
-          mutate(factor = gsub(pattern = "bg_method",replacement = "BG:",x=factor))%>%
-          mutate(response = case_when(response == "pa_AUC" ~ "AUC",
-                                      response == "pa_sensitivity" ~ "Sensitivity",
-                                      response == "pa_specificity" ~ "Specificity")) -> marg_for_gg
-        
-        
-            marg_for_gg %>%
-            mutate(factor = factor(factor,
-                                   levels=marg_for_gg %>%
-                                     arrange(plot_order,factor) %>%
-                                     pull(factor) %>%
-                                     unique()
-            ))%>%
-          ggplot(mapping = aes(y=AME,x=factor))+
-          geom_point()+
-          #scale_x_discrete(labels=marg_for_gg$factor_name)+
-          geom_errorbar(mapping = aes(ymin=lower,ymax=upper))+
-          facet_wrap(~response,ncol = 1,scales = "free_y")+
-          geom_hline(yintercept = 0,lty=2)+
-          theme_bw()+
-          geom_vline(
-            aes(xintercept =  stage(factor, after_scale = 1.5)),
-            colour = "grey"
-          )+
-          geom_vline(
-            aes(xintercept =  stage(factor, after_scale = 5.5)),
-            colour = "grey"
-          ) -> marginals_plot
-        
-            ggsave(plot = marginals_plot, filename = "figures/marginals_plot.svg",
-                   width = 10,height = 5,units = "in",dpi = 600)
-            
-            ggsave(plot = marginals_plot, filename = "figures/marginals_plot.jpg",
-                   width = 10,height = 5,units = "in",dpi = 600)
-            
-            
-      # Interaction plots
-            
-      
-      int_stats %>%
-        mutate(model = paste(pres_method,"/",bg_method,sep = ""))%>%
-        mutate(response = case_when(response == "pa_AUC" ~ "AUC",
-                                    response == "pa_sensitivity" ~ "Sensitivity",
-                                    response == "pa_specificity" ~ "Specificity"))%>%
-        ggplot(mapping = aes(x=model,
-                             y=fit))+
-        geom_point()+
-        geom_errorbar(mapping = aes(ymin = fit - se.fit,
-                                    ymax = fit + se.fit))+
-        facet_wrap(~response,
-                   ncol = 1,
-                   scales = "free_y")+
-        theme_bw()+
-        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
-        geom_vline(
-          aes(xintercept =  stage(model, after_scale = 6.5)),
-          colour = "grey"
-        )+
-        geom_vline(
-          aes(xintercept =  stage(model, after_scale = 12.5)),
-          colour = "grey"
-        ) +
-        
-        geom_vline(
-          aes(xintercept =  stage(model, after_scale = 18.5)),
-          colour = "grey"
-        ) +
-        geom_vline(
-          aes(xintercept =  stage(model, after_scale = 24.5)),
-          colour = "grey"
-        ) +
-        
-        
-        ylab(NULL) +
-        xlab("Model") -> interactions_plot
-
-      
-      ggsave(plot = interactions_plot, filename = "figures/interactions_plot.svg",
-             width = 10,height = 6,units = "in",dpi = 600)
-      
-      ggsave(plot = interactions_plot, filename = "figures/interactions_plot.jpg",
-             width = 10,height = 6,units = "in",dpi = 600)
-      
-            
-##################
-      
-      full_output %>%
-        filter(n_presence < 20)%>%
-        filter(!is.na(pres_method) & !is.na(bg_method))%>%
-        mutate(type = case_when(pres_method == bg_method ~ "homotypic",
-                                pres_method != bg_method ~ "heterotypic"))%>%
-          mutate(type = case_when(bg_method == "none" ~ "presence only",
-                                  bg_method != "none" ~ type))%>%
-        group_by(model)%>%
-          ggplot(mapping = aes(x=type,y=pa_AUC,fill=bg_method))+
-        geom_boxplot()+
-        #geom_violin()+
-        geom_vline(
-          aes(xintercept =  stage(type, after_scale = 1.5)),
-          colour = "grey"
-        )+
-        geom_vline(
-          aes(xintercept =  stage(type, after_scale = 2.5)),
-          colour = "grey"
-        )+
-        facet_wrap(~pres_method,scales = "free_y",nrow = 1)
-        
-
-##################################################################
       
         
 ##############
@@ -592,7 +233,7 @@ library(tidyverse)
         select(-n_presence,-n_background,-bg_method,-pres_method,-ratio_method,
                -n_pa_absence,-n_pa_presence,-species)%>%
         select(model,contains("pa_"))%>%
-        sig_different_by_column(filter_by = "pa_AUC")->all_sample_comparable_to_best
+        sig_different_by_column(filter_by = "pa_AUC") -> all_sample_comparable_to_best
       
   write.csv(x = all_sample_comparable_to_best$p_val_table,
             file = "tables/all_samples_comparable_to_best_pval.csv",
@@ -637,6 +278,7 @@ library(tidyverse)
   
       
 ##################
+library(svglite)
   
   # PLotting overall models that are comparable to maxnet
 
