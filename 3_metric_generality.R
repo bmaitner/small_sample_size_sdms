@@ -1,6 +1,4 @@
-# This script is designed to do 2 things:
-     #1) Evaluate which of the performance metrics are useful estimates of the PA equivalent metrics
-     #2) Using the most transferable metrics, select a subset of models for detailed evaluation at low sample sizes
+# This script is designed to evaluate which of the performance metrics are useful estimates of the PA equivalent metrics
 
 #load packages
 library(confintr)
@@ -37,6 +35,20 @@ full_output %>%
 
 rm(full_output_dr)
 
+tempfile_fold <- "outputs/temp_bakeoff_output_fold.rds"
+tempfile_fold_dr <- "outputs/temp_bakeoff_output_fold_dr.rds"
+
+fold_output <- readRDS(tempfile_fold)
+fold_output_dr <- readRDS(tempfile_fold_dr)
+
+fold_output_dr %>%
+  bind_rows(fold_output) -> fold_output
+
+fold_output %>%
+  mutate(model = case_when(!is.na(ratio_method) ~ ratio_method,
+                           is.na(ratio_method) ~ paste(pres_method, "/", bg_method))) -> fold_output
+
+rm(fold_output_dr)
 
 # combining fold data with full data
 
@@ -278,3 +290,49 @@ metric_corr_data %>%
 ggsave(filename = "figures/training_vs_pa_metric_correlations.jpeg",
        plot = correlations_training_vs_pa,
        dpi = 600,width = 10,height = 5,units = "in")
+
+
+###################################################
+
+# Testing v training correlations
+
+data_for_cor_test<-
+combined_output %>%
+  filter(n_presence <= 20)%>%
+  select(`mean testing_AUC`,pa_AUC)%>%
+  na.omit()
+  
+  
+  cor.test(x = data_for_cor_test$`mean testing_AUC`,
+           y = data_for_cor_test$pa_AUC,
+           method = "pearson")
+
+  
+# Checking whether rank orders are correlated  
+  
+data_for_rank_cor_test <-  
+combined_output %>%
+  filter(n_presence <= 20) %>%
+  select(species,model,`mean testing_AUC`,pa_AUC) %>%
+  na.omit()%>%
+  group_by(species)%>%
+  arrange(species,-pa_AUC)%>%
+  mutate(pa_rank = row_number())%>%
+  arrange(species,-`mean testing_AUC`)%>%
+  mutate(test_rank = row_number())
+
+cor.test(x = data_for_rank_cor_test$test_rank,
+         y = data_for_rank_cor_test$pa_rank,
+         method = "pearson")
+
+# How often was the model that ranked highest on test data also the best on PA data?
+
+nrow(data_for_rank_cor_test %>%
+  filter(test_rank == 1 & pa_rank == 1))/length(unique(data_for_rank_cor_test$species))*100
+
+
+
+
+
+
+

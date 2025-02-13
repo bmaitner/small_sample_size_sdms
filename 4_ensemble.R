@@ -6,7 +6,7 @@ library(AUC)
 library(rvinecopulib)
 library(pROC)
 library(lemon)
-library(pbsdm)
+library(S4DM)
 library(kernlab)
 library(tidyverse)
 library(sf)
@@ -92,7 +92,7 @@ source("R/evaluate_disdat_ensemble.R")
     geom_point()+
     geom_abline(slope = 1,intercept = 0)
   
-# Sens (always higher with vote thresholding)  
+# Sens
 
   ensemble_fold %>%
     ggplot(mapping = aes(x=testing_sensitivity,
@@ -100,7 +100,7 @@ source("R/evaluate_disdat_ensemble.R")
     geom_point()+
     geom_abline(slope = 1,intercept = 0)
 
-# Spec (always higher with ensemble averaging)  
+# Spec
   
   ensemble_fold %>%
     ggplot(mapping = aes(x=testing_specificity,
@@ -122,10 +122,7 @@ source("R/evaluate_disdat_ensemble.R")
   # at lower densities, seems to be better to take any vote approach
 
   #species,presence,name(model),value (metric = kde sensitivity)
-  
-  
-  
-  
+
   
    ensemble_full %>%
      select(species,n_presence, contains("sensitivity")) %>%
@@ -220,9 +217,9 @@ source("R/evaluate_disdat_ensemble.R")
      select(species,n_presence, contains("pa_")) %>%
      select(species,n_presence, !contains("pAUC_")) %>%
      pivot_longer(cols = contains("sensit")|contains("specif")|contains("prediction"))%>%
-     mutate(model = case_when(grepl(pattern = "any_vote",x=name) ~ "ensemble_any_votes",
-                              grepl(pattern = "all_vote",x=name) ~ "ensemble_all_votes",
-                              .default = "ensemble_mean"))%>%
+     mutate(model = case_when(grepl(pattern = "any_vote",x=name) ~ "Ensemble_any_support",
+                              grepl(pattern = "all_vote",x=name) ~ "Ensemble_unanimous_support",
+                              .default = "Ensemble_mean"))%>%
      mutate(metric = case_when(grepl(pattern = "sensitivity",x=name) ~ "sensitivity",
                                grepl(pattern = "specificity",x=name) ~ "specificity",
                                grepl(pattern = "prediction",x=name) ~ "prediction_accuracy"))%>%
@@ -232,12 +229,20 @@ source("R/evaluate_disdat_ensemble.R")
                     mutate(metric = gsub(pattern = "pa_",replacement = "",x=metric))) %>%
      # mutate(model = factor(x=model,levels = c("ensemble_all_votes","ensemble_mean","ensemble_any_votes",
      #                                          "kde/kde","rulsif","maxnet")))%>%
+     mutate(metric = case_when(grepl(pattern = "sensitivity",x=metric) ~ "Sensitivity",
+                               grepl(pattern = "specificity",x=metric) ~ "Specificity",
+                               grepl(pattern = "prediction",x=metric) ~ "Prediction accuracy"))%>%
      mutate(model = gsub(pattern = "_",replacement =" ",x=model))%>%
      mutate(metric = gsub(pattern = "_",replacement =" ",x=metric))%>%
-     mutate(model = factor(x=model,levels = c("ensemble all votes","kde/kde",
-                                              "rulsif","ensemble mean",
-                                              "maxnet","ensemble any votes")))%>%
-     mutate(metric = factor(x=metric,levels = c("sensitivity","specificity","prediction accuracy")))%>%
+     mutate(model = case_when(grepl(pattern = "rulsif",x=model) ~ "ruLSIF",
+                               grepl(pattern = "maxnet",x=model) ~ "Maxnet",
+                               grepl(pattern = "kde/kde",x=model) ~ "KDE/KDE",
+                              .default = model))%>%
+     mutate(model = factor(x=model,levels = c("Ensemble unanimous support","KDE/KDE",
+                                              "ruLSIF","Ensemble mean",
+                                              "Maxnet","Ensemble any support")))%>%
+     mutate(metric = factor(x=metric,
+                            levels = c("Sensitivity","Specificity","Prediction accuracy")))%>%
     filter(n_presence <= 20)%>%
    ggplot(mapping = aes(x = model,
                           y = value))+
@@ -250,7 +255,11 @@ source("R/evaluate_disdat_ensemble.R")
      facet_wrap(~metric,ncol = 1)+
      theme_bw()+
      xlab(NULL)+
-     ylab(NULL) -> ensemble_figure
+     ylab(NULL)+
+     theme(strip.text = element_text(size = 10 ),
+           axis.text.x = element_text(size = 10 )) -> ensemble_figure
+   
+ensemble_figure     
 
 ggsave(filename = "figures/ensemble_metrics.jpg",
        plot = ensemble_figure,width = 10,height = 5,units = "in",dpi = 600)
