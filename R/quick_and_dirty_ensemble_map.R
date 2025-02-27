@@ -1,22 +1,33 @@
-
+library(tidyverse)
+library(lubridate)
 quick_and_dirty_ensemble_map <- function(env,
-                                         csv_file,
+                                         species,
                                          ensemble,
                                          buffer_width = 100000,
-                                         quantile = 0.05){
+                                         quantile = 0.05,
+                                         oldest_year = 1970){
   
   # Load csv
   
-  occs <- read.csv(csv_file)
+  occs <- BIEN::BIEN_occurrence_species(species = species)
+  
+  # Filter
+  
+  occs <-
+  occs %>%
+    mutate(year_collect = year(date_collected)) %>%
+    filter(date_collected >= oldest_year) %>%
+    select(scrubbed_species_binomial,latitude,longitude) %>%
+    distinct()
+  
+  
   
   # Transform projection  
   
   occs %>%
-    st_as_sf(coords=c("lon","lat")) -> occs
+    st_as_sf(coords=c("longitude","latitude")) -> occs
   
-  st_crs(occs) <- st_crs("+proj=moll +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs")
-  
-  occs <- st_transform(occs,crs = "WGS84")
+  st_crs(occs) <- st_crs("WGS84")
   
   # Convert format for simplicity
   
@@ -30,14 +41,14 @@ quick_and_dirty_ensemble_map <- function(env,
   
   # Get background
   
-  bg <- pbsdm::get_env_bg(coords = occs[c("lon","lat")],
+  bg <- S4DM::get_env_bg(coords = occs[c("lon","lat")],
                           env = env,
                           standardize = FALSE,
                           width = buffer_width)
   
   # Get presence  
   
-  pres <- pbsdm::get_env_pres(coords = occs[c("lon","lat")],
+  pres <- S4DM::get_env_pres(coords = occs[c("lon","lat")],
                               env = env)
   
   # Make message vector
@@ -56,7 +67,7 @@ quick_and_dirty_ensemble_map <- function(env,
     # fit model
     if(length(model_i) == 2){
       
-      fitted_i <- tryCatch(pbsdm::fit_plug_and_play(presence = pres$env,
+      fitted_i <- tryCatch(S4DM::fit_plug_and_play(presence = pres$env,
                                                     background = bg$env,
                                                     presence_method =  model_i[1],
                                                     background_method = model_i[2]),
@@ -64,7 +75,7 @@ quick_and_dirty_ensemble_map <- function(env,
       
     }else{
       
-      fitted_i <- tryCatch(pbsdm::fit_density_ratio(presence = pres$env,
+      fitted_i <- tryCatch(S4DM::fit_density_ratio(presence = pres$env,
                                                     background = bg$env,
                                                     method = model_i[1]),
                            error = function(e){e})
@@ -98,13 +109,13 @@ quick_and_dirty_ensemble_map <- function(env,
     if(length(model_i) == 2){
       
       
-      projected_i <- pbsdm::project_plug_and_play(pnp_model = fitted_i,
+      projected_i <- S4DM::project_plug_and_play(pnp_model = fitted_i,
                                                   data = bg$env)
       
       
     }else{
       
-      projected_i <- pbsdm::project_density_ratio(dr_model = fitted_i,
+      projected_i <- S4DM::project_density_ratio(dr_model = fitted_i,
                                                   data = bg$env)
       
     }

@@ -6,7 +6,7 @@
 library(BIEN)
 library(geodata)
 library(ggplot2)
-library(pbsdm)
+library(S4DM)
 library(sf)
 library(terra)
 library(tidyterra)
@@ -25,61 +25,63 @@ library(ggpmisc)
                           path = temp)
 
 # # Function for occurrence counting
-#   
+# # Note that this function relies on occurrence data that have been cleaned as part of the BIEN range modeling workflow
+# # Since these take a lot of space, I include the code I used for reference but only retain the derived data 
+# 
 #   get_n_occs <- function(file_list){
-#     
+# 
 #     for(i in 1:length(file_list)){
-#     
+# 
 #         print(i)
-#       
+# 
 #         file_i <- read.csv(file_list[i])
-#       
+# 
 #       # assign species if it isn't part of the metadata
-#       
+# 
 #         if(is.null(file_i$sp)){file_i$sp <- gsub(pattern = ".csv",
 #                                                  replacement = "",
 #                                                  x = basename(file_list[i]))}
-#   
-#       # Get the count and other metadata  
-#   
+# 
+#       # Get the count and other metadata
+# 
 #         out_i <- data.frame(file = file_list[i],
 #                             species=file_i$sp[1],
 #                             n_occs = nrow(file_i))
 #       # combine output
-#         
+# 
 #         if(i == 1){
 #           out <- out_i
 #         }else{
 #           out <- rbind(out,out_i)
 #         }
-#       
+# 
 #     } # i loop end
-#     
+# 
 #     return(out)
-#     
+# 
 #   } #end n_occs fx
 # 
 #   # Get info on potential species. Using a dump of small-ranged species from BIEN
-#   
+# 
 #   point_counts <- list.files("data/manual_downloads/BIEN_occs/Users/ctg/Documents/SDMs/BIEN_1123/_inputs/SpeciesCSVs/Points/",
 #                              pattern = ".csv",full.names = TRUE) |> get_n_occs()
-#   
+# 
 #   # Empty folder
 #   # point_counts_from_rangebag <- list.files("data/manual_downloads/BIEN_occs/Users/ctg/Documents/SDMs/BIEN_1123/_inputs/SpeciesCSVs/PointsFromRangeBag/",
 #   #                            pattern = ".csv",full.names = TRUE) |> get_n_occs()
-#   
+# 
 #   rangebag_counts <- list.files("data/manual_downloads/BIEN_occs/Users/ctg/Documents/SDMs/BIEN_1123/_inputs/SpeciesCSVs/RangeBag/",
 #                              pattern = ".csv",full.names = TRUE) |> get_n_occs()
-#   
+# 
 #   rangebag_counts_from_ppm <- list.files("data/manual_downloads/BIEN_occs/Users/ctg/Documents/SDMs/BIEN_1123/_inputs/SpeciesCSVs/RangeBagFromPPM/",
 #                                 pattern = ".csv",full.names = TRUE) |> get_n_occs()
-#   
+# 
 #   ppm1530_counts <- list.files("data/manual_downloads/BIEN_occs/Users/ctg/Documents/SDMs/BIEN_1123/_inputs/SpeciesCSVs/PPM15_30/",
 #                                          pattern = ".csv",full.names = TRUE) |> get_n_occs()
-#   
+# 
 #   ppm_counts  <- list.files("data/manual_downloads/BIEN_occs/Users/ctg/Documents/SDMs/BIEN_1123/_inputs/SpeciesCSVs/PPM/",
 #                             pattern = ".csv",full.names = TRUE) |> get_n_occs()
-#   
+# 
 # 
 #   all_counts <- rbind(point_counts,
 #         rangebag_counts,
@@ -165,9 +167,6 @@ source("R/profile_ensemble.R")
     
   }
   
-  #saveRDS(object = ensemble_profiles,file = "outputs/ensemble_profile_20.RDS")  
-  #ensemble_profiles <- readRDS("outputs/ensemble_profile_20.RDS")
-  
   #saveRDS(object = ensemble_profiles,file = "outputs/ensemble_profile_100.RDS")  
   #ensemble_profiles <- readRDS("outputs/ensemble_profile_100.RDS")
     
@@ -242,20 +241,20 @@ source("R/profile_ensemble.R")
   
 
   ensemble_profiles %>%
-    rowwise()%>%
-    filter(!is.na(one_vote))%>%
+    rowwise() %>%
+    filter(!is.na(one_vote)) %>%
     mutate(`One Vote +` = (one_vote+two_votes+three_votes)/total_votes,
            `Two Votes +` = (two_votes+three_votes)/total_votes,
-           `Three Votes` = (three_votes)/total_votes)%>%
+           `Three Votes` = (three_votes)/total_votes) %>%
     pivot_longer(cols = c(`One Vote +`,`Two Votes +`,`Three Votes`),
                  names_to = "Support",
-                 values_to = "prop")%>%
+                 values_to = "prop") %>%
     mutate(Support = factor(x=Support,
                             ordered = TRUE,
                             levels = c("One Vote +",
                                        "Two Votes +",
                                        "Three Votes"))) %>%
-    filter(Support != "One Vote +")%>%
+    filter(Support != "One Vote +") %>%
     filter(Support != "Two Votes +") -> ensemble_profile_summary
   
   ensemble_profile_summary %>%
@@ -317,240 +316,36 @@ source("R/profile_ensemble.R")
 
   source("R/quick_and_dirty_ensemble_map.R")
 
-    #Liatris_gholsonii
+    
+    cs <- BIEN_occurrence_species(species = "Chrysopsis subulata")
 
   #Chrysopsis_subulata not bad
 
   example_map <-quick_and_dirty_ensemble_map(env = env,
-                               csv_file = ensemble_profiles %>%
-                                 filter(species == "Chrysopsis_subulata")%>%
-                                 pull(csv_file),
+                                             species = "Chrysopsis subulata",
+                                             oldest_year = 1970,
                                ensemble = c("kde/kde","rulsif","maxnet"),
                                buffer_width = 200000,
                                quantile = 0.05 
                                )
 
 
-  example_map+
-    scale_fill_manual(values = c("lightgreen","green","darkgreen"))
-  
-
-all_counts %>%
-  filter(species =="Liatris_gholsonii")%>%
-  pull(file)->csv_file
-
-
-
-# Here, we'll use the same data as before for Trillium vaseyi.
-
-#First, we'll check the background data to look for correlated precictors
-
-tv_bg <- get_env_bg(coords = tv[c("longitude","latitude")],
-                    env = env,
-                    width = 50000,
-                    standardize = TRUE) #note that we used a small set of background points to expedite model fitting
-
-# Filter bg of highly correlated stuff
-
-library(corrplot)
-
-tv_bg$env %>%
-  cor()
-
-
-# toss anything greater than 0.7
-  tv_bg$env %>%
-    as.data.frame() %>%
-    select(- wc2.1_10m_bio_3,
-           - wc2.1_10m_bio_4,
-           - wc2.1_10m_bio_5,
-           - wc2.1_10m_bio_6,
-           - wc2.1_10m_bio_7,
-           - wc2.1_10m_bio_8,
-           - wc2.1_10m_bio_9,
-           - wc2.1_10m_bio_10,
-           - wc2.1_10m_bio_11,
-           #- wc2.1_10m_bio_13,
-            - wc2.1_10m_bio_14,
-            - wc2.1_10m_bio_15,
-           - wc2.1_10m_bio_16,
-           - wc2.1_10m_bio_17,
-           - wc2.1_10m_bio_18,
-           - wc2.1_10m_bio_19) %>%
-    cor() %>%colnames()->preds_to_keep
-   #%>% corrplot()
-
-  env <- env[[preds_to_keep]]
+    ggsave(plot =   example_map+
+             scale_fill_manual(values = c("lightgreen","green","darkgreen")),
+           filename = "figures/example_ensemble_prediction.jpg",
+           width = 5,
+           height = 5,
+           units = "in")
     
-# get new bg
-
-  tv_bg <- get_env_bg(coords = tv[c("longitude","latitude")],
-                      env = env,
-                      width = 50000,
-                      standardize = TRUE) #note that we used a small set of background points to expedite model fitting
-
-# Next, we get the presence data:
-
-  tv_presence <- get_env_pres(coords = tv[c("longitude","latitude")],
-                              env = env,
-                              env_bg = tv_bg)
-
-# make maps
+    ggsave(plot =   example_map+
+             scale_fill_manual(values = c("lightgreen","green","darkgreen")),
+           filename = "figures/example_ensemble_prediction.svg",
+           width = 5,
+           height = 5,
+           units = "in")
     
-  kde_map <- make_range_map(occurrences = tv[c("longitude","latitude")],
-                 env = env,
-                 method = "kde",
-                 background_buffer_width = 50000)  
-  
-  maxnet_map <- make_range_map(occurrences = tv[c("longitude","latitude")],
-                            env = env,
-                            method = "maxnet",
-                            background_buffer_width = 50000)
-  
-  rulsif_map <- make_range_map(occurrences = tv[c("longitude","latitude")],
-                            env = env,
-                            method = "rulsif",
-                            background_buffer_width = 50000)  
-
-  tv_stack <- c(kde_map,maxnet_map,rulsif_map)
-
-# combine layers
-
-  tv_sf <-  tv_stack %>%
-    terra::app(fun = function(x){sum(x,na.rm = TRUE)})%>%
-    subst(from = 0,to=NA)%>%
-      terra::as.polygons()%>%
-      st_as_sf()%>%
-    rename(votes = lyr.1)%>%
-    mutate(votes = as.factor(votes))
-           
-# make point sf
-
-
-  tv[c("longitude","latitude")]%>%
-    st_as_sf(coords = c("longitude","latitude")) -> tv_points
-    
-  st_crs(tv_points) <- "wgs84"
-
-           
-library(tidyterra)    
-  library(ggnewscale)
-
-  ggplot(data = tv_sf)+
-    geom_sf()+
-  geom_spatraster(data = env$wc2.1_10m_bio_1 %>%
-                    crop(y = tv_sf),na.rm = TRUE)+
-    scale_fill_viridis_c(na.value = NA,name="Mean Ann. Temp.")+
-    theme_bw()+
-    new_scale_fill()+
-    geom_sf(data = tv_sf,
-            mapping = aes(fill = votes))+
-      scale_fill_manual(breaks = c(1,2,3),
-                        values= c("purple",
-                                  "magenta",
-                                  "skyblue"))+
-    scale_x_continuous(expand = c(0,0))+
-    scale_y_continuous(expand=c(0,0))+
-    geom_sf(data = tv_points,size=.4,alpha=0.5)
-  
-  
-kde_map%>%
-#rulsif_map%>%
-  #maxnet_map%>%
-  terra::as.polygons()%>%
-  plot()
-  
-###################################
-
-
-
-
-# Opuntia corallicola 
-# Pilosocereus robinii 
-
-library(todoBIEN)
-source("C:/Users/Brian Maitner/Desktop/current_projects/cds/misc/password_and_username.R")
-cm<-todoBIEN::BIEN_occurrence_species(species = "Consolea macracantha",
-                                  user=user,
-                                  password=password) %>%
-  select(latitude,longitude) %>%
-  unique()
-
-pr<-todoBIEN::BIEN_occurrence_species(species = "Pilosocereus robinii",
-                                      user=user,
-                                      password=password) %>%
-  select(latitude,longitude) %>%
-  unique()
-
-
-env <- worldclim_global(var = "bio",
-                        res = 10,
-                        path = temp)
-
-bien_output <-pr
-quicklook <- function(bien_output,env){
-  
-  kde_map_bien <- make_range_map(occurrences = bien_output[c("longitude","latitude")],
-                            env = env,
-                            method = "kde",
-                            background_buffer_width = 50000)  
-  
-  maxnet_map_bien <- make_range_map(occurrences = bien_output[c("longitude","latitude")],
-                               env = env,
-                               method = "maxnet",
-                               background_buffer_width = 50000)
-  
-  rulsif_map_bien <- make_range_map(occurrences = bien_output[c("longitude","latitude")],
-                               env = env,
-                               method = "rulsif",
-                               background_buffer_width = 50000)
-  
-  
-  bien_sf <-  c(kde_map_bien,maxnet_map_bien,rulsif_map_bien) %>%
-    terra::app(fun = function(x){sum(x,na.rm = TRUE)})%>%
-    subst(from = 0,to=NA)%>%
-    terra::as.polygons()%>%
-    st_as_sf()%>%
-    rename(votes = lyr.1)%>%
-    mutate(votes = as.factor(votes))
-  
-  
-  return(bien_sf)
     
   
-}
-
-#
-
-
-
-
-
-test <- todoBIEN::BIEN_occurrence_species(species = "Deeringothamnus pulchellus",
-                                          user=user,
-                                          password=password) %>%
-  select(latitude,longitude) %>%
-  unique()
-
-
-quicklook(bien_output = test,
-          env = env)->out
-
-ggplot(data = out)+
-  geom_sf()+
-  geom_spatraster(data = env$wc2.1_10m_bio_1 %>%
-                    crop(y = st_buffer(out,1000000)),na.rm = TRUE)+
-  scale_fill_viridis_c(na.value = NA,name="Mean Ann. Temp.")+
-  theme_bw()+
-  new_scale_fill()+
-  geom_sf(data = out,
-          mapping = aes(fill = votes))+
-  scale_fill_manual(breaks = c(1,2,3),
-                    values= c("purple",
-                              "magenta",
-                              "skyblue"))+
-  scale_x_continuous(expand = c(0,0))+
-  scale_y_continuous(expand=c(0,0))
 
 
 
