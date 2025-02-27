@@ -7,3 +7,4 @@ papers
 misc
 data
 *.RData
+*.Rproj
