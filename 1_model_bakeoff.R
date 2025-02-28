@@ -394,7 +394,7 @@ ggsave(plot = svs,
        units = "in",dpi = 600)
 
 ggsave(plot = svs,
-       filename = "figures/sensitivity_v_specificity_pres_only.png",
+       filename = "figures/sensitivity_v_specificity_pres_only.svg",
        width = 5,
        height = 5,
        units = "in",dpi = 600)
@@ -463,7 +463,7 @@ ggsave(plot = svs2,
        units = "in",dpi = 600)
 
 ggsave(plot = svs2,
-       filename = "figures/sensitivity_v_specificity.png",
+       filename = "figures/sensitivity_v_specificity.svg",
        width = 5,
        height = 5,
        units = "in",dpi = 600)
