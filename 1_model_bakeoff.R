@@ -322,3 +322,150 @@ full %>%
   table()
 
   #45/(45+181) #20%
+
+##########################################################################
+
+
+library(tidyverse)
+library(ggplot2)
+library(ggrepel)
+library(grid)
+
+
+full_model_output_all <- readRDS(file = "outputs/full_model_output_all.RDS")
+
+full_model_output_all %>%
+  #filter(n_presence <= 20)%>%
+  filter(method %in% c("kde / none","vine / none","gaussian / none",
+                       "maxnet","ulsif","rulsif",
+                       "rangebagging / none","lobagoc / none"))%>%
+  mutate(method = gsub(pattern = " / none",replacement = "",x=method))%>%
+  mutate(method = gsub(pattern = "maxnet",replacement = "Maxnet",x=method))%>%
+  mutate(method = gsub(pattern = "vine",replacement = "Vine",x=method))%>%
+  mutate(method = gsub(pattern = "gaussian",replacement = "Gaussian",x=method))%>%
+  mutate(method = gsub(pattern = "kde",replacement = "KDE",x=method))%>%
+  mutate(method = gsub(pattern = "rangebagging",replacement = "Range-Bagging",x=method))%>%
+  mutate(method = gsub(pattern = "ulsif",replacement = "uLSIF",x=method))%>%
+  mutate(method = gsub(pattern = "lobagoc",replacement = "LOBAG-OC",x=method)) %>%  
+  #mutate(sens_spec_ratio = pa_specificity-pa_sensitivity) %>%
+  group_by(method)%>%
+  #summarise(sens_spec_ratio = median(na.omit(sens_spec_ratio)))%>%
+  summarise(mean_sensitivity = mean(na.omit(pa_sensitivity)),
+            mean_specificity = mean(na.omit(pa_specificity)),
+            ci_low_sensitivity = quantile(x = pa_sensitivity,
+                                          probs = 0.25,
+                                          na.rm=TRUE),
+            ci_high_sensitivity = quantile(x = pa_sensitivity,
+                                           probs = 0.75,
+                                           na.rm=TRUE),
+            ci_low_specificity = quantile(x = pa_specificity,
+                                          probs = 0.25,
+                                          na.rm=TRUE),
+            ci_high_specificity = quantile(x = pa_specificity,
+                                           probs = 0.75,
+                                           na.rm=TRUE)
+            
+  ) %>%
+  ggplot(mapping = aes(x=mean_sensitivity,
+                       y=mean_specificity,
+                       label = method,
+                       color = method))+
+  geom_errorbar(mapping = aes(ymin=ci_low_specificity,
+                              ymax=ci_high_specificity),
+                linewidth = 1)+
+  geom_errorbarh(mapping = aes(xmin=ci_low_sensitivity,
+                               xmax=ci_high_sensitivity),
+                 linewidth = 1)+
+  geom_point(size=3)+
+  scale_x_continuous(expand = c(0, 0),limits = c(0,1.2)) +
+  scale_y_continuous(expand = c(0, 0),limits = c(0,1.2))+
+  ylab("Specificity")+
+  xlab("Sensitivity")+
+  theme_bw()+
+  guides(color="none")+ 
+  geom_text_repel(max.overlaps = 20,
+                  box.padding = 3,
+                  point.padding = 0)->svs
+
+ggsave(plot = svs,
+       filename = "figures/sensitivity_v_specificity_pres_only.jpg",
+       width = 5,
+       height = 5,
+       units = "in",dpi = 600)
+
+ggsave(plot = svs,
+       filename = "figures/sensitivity_v_specificity_pres_only.png",
+       width = 5,
+       height = 5,
+       units = "in",dpi = 600)
+
+
+#######################################################################
+
+# the subtypes together model all 
+
+full_model_output_all %>%
+  mutate(method = case_when(is.na(pres_method) ~ ratio_method,
+                            !is.na(pres_method) ~pres_method)) %>%
+  mutate(method = gsub(pattern = " / none",replacement = "",x=method))%>%
+  mutate(method = gsub(pattern = "maxnet",replacement = "Maxnet",x=method))%>%
+  mutate(method = gsub(pattern = "vine",replacement = "Vine",x=method))%>%
+  mutate(method = gsub(pattern = "gaussian",replacement = "Gaussian",x=method))%>%
+  mutate(method = gsub(pattern = "kde",replacement = "KDE",x=method))%>%
+  mutate(method = gsub(pattern = "rangebagging",replacement = "Range-Bagging",x=method))%>%
+  mutate(method = gsub(pattern = "ulsif",replacement = "uLSIF",x=method))%>%
+  mutate(method = gsub(pattern = "lobagoc",replacement = "LOBAG-OC",x=method))%>%
+  group_by(method)%>%
+  #summarise(sens_spec_ratio = median(na.omit(sens_spec_ratio)))%>%
+  summarise(mean_sensitivity = mean(na.omit(pa_sensitivity)),
+            mean_specificity = mean(na.omit(pa_specificity)),
+            ci_low_sensitivity = quantile(x = pa_sensitivity,
+                                          probs = 0.25,
+                                          na.rm=TRUE),
+            ci_high_sensitivity = quantile(x = pa_sensitivity,
+                                           probs = 0.75,
+                                           na.rm=TRUE),
+            ci_low_specificity = quantile(x = pa_specificity,
+                                          probs = 0.25,
+                                          na.rm=TRUE),
+            ci_high_specificity = quantile(x = pa_specificity,
+                                           probs = 0.75,
+                                           na.rm=TRUE)
+            
+  ) %>%
+  ggplot(mapping = aes(x=mean_sensitivity,
+                       y=mean_specificity,
+                       label = method,
+                       color = method))+
+  geom_errorbar(mapping = aes(ymin=ci_low_specificity,
+                              ymax=ci_high_specificity),
+                linewidth = 1)+
+  geom_errorbarh(mapping = aes(xmin=ci_low_sensitivity,
+                               xmax=ci_high_sensitivity),
+                 linewidth = 1)+
+  geom_point(size=3)+
+  scale_x_continuous(expand = c(0, 0),limits = c(0,1.2)) +
+  scale_y_continuous(expand = c(0, 0),limits = c(0,1.2))+
+  ylab("Specificity")+
+  xlab("Sensitivity")+
+  theme_bw()+
+  guides(color="none")+ 
+  geom_text_repel(max.overlaps = 20,
+                  box.padding = 3,
+                  point.padding = 0)->svs2
+
+plot(svs2)  
+
+ggsave(plot = svs2,
+       filename = "figures/sensitivity_v_specificity.jpg",
+       width = 5,
+       height = 5,
+       units = "in",dpi = 600)
+
+ggsave(plot = svs2,
+       filename = "figures/sensitivity_v_specificity.png",
+       width = 5,
+       height = 5,
+       units = "in",dpi = 600)
+
+
