@@ -120,7 +120,8 @@ for(q in 1:length(quantiles_to_evaluate)){
     if(quantile_q %in% quantile_variation_output$quantile &
        paste(models_to_evaluate$presence_method[i],
              models_to_evaluate$background_method[i],
-             sep = "/") %in% quantile_variation_output$model){next}
+             sep = "/") %in% quantile_variation_output$model
+       ){next}
     
     out_i <- evaluate_disdat(presence_method = models_to_evaluate$presence_method[i],
                     background_method = models_to_evaluate$background_method[i],
@@ -155,7 +156,8 @@ for(q in 1:length(quantiles_to_evaluate)){
     
     
     if(quantile_q %in% quantile_variation_output$quantile &
-       dr_models_to_evaluate[j] %in% quantile_variation_output$model){next}
+       dr_models_to_evaluate[j] %in% quantile_variation_output$model
+       ){next}
     
     
     out_j <- evaluate_disdat(presence_method = NULL,
@@ -190,10 +192,7 @@ for(q in 1:length(quantiles_to_evaluate)){
   
     quantile_variation_output %>%
       saveRDS(file = file.path(quantile_tempfile_full))
-  
-  
-  
-  
+
 } #q loop
 
 
