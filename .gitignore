@@ -5,6 +5,6 @@
 deleted_scripts
 papers
 misc
-data
 *.RData
 *.Rproj
+data
