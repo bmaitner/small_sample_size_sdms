@@ -15,10 +15,14 @@ get_valavi_stats <- function(models_prediction_folder = "data/manual_downloads/V
   
   for(i in 1:length(model_folders)){
     
+    message("Processing folder/model ",i," of ",length(model_folders))
+    
     dir_i <- model_folders[i]
     files_i <- list.files(dir_i,recursive = TRUE,full.names = TRUE)
     
     for(j in 1:length(files_i)){
+      
+      message("Processing species ",j," of ",length(files_i))
       
       # get data
       
@@ -29,7 +33,8 @@ get_valavi_stats <- function(models_prediction_folder = "data/manual_downloads/V
       data_j <- disdat::disData(data_j$region)$pa %>%
         dplyr::filter(spid == unique(data_j$spid)) %>%
         select(spid,siteid,pa)%>%
-        right_join(data_j )
+        right_join(data_j,
+                   by = join_by(spid, siteid))
       
       # calc AUC
       
