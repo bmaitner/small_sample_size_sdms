@@ -92,7 +92,6 @@ models_to_evaluate <-
 dr_models_to_evaluate <- c("ulsif","rulsif","maxnet")
                     
 
-
 quantiles_to_evaluate <- c(0.05, 0.10, 0.15, 0.20, 0.25)
 
 
@@ -111,17 +110,30 @@ if(file.exists(quantile_tempfile_full)){
 }
 
 
+#Skipping quantile 0.1 model gaussian/none already done
+
+
 for(q in 1:length(quantiles_to_evaluate)){
   
   quantile_q <- quantiles_to_evaluate[q]
   
   for(i in 1:nrow(models_to_evaluate)){
     
-    if(quantile_q %in% quantile_variation_output$quantile &
-       paste(models_to_evaluate$presence_method[i],
-             models_to_evaluate$background_method[i],
-             sep = "/") %in% quantile_variation_output$model
-       ){next}
+    
+    
+    if(any(quantile_variation_output$quantile == quantile_q &
+           quantile_variation_output$model == paste(models_to_evaluate$presence_method[i],
+                                                    models_to_evaluate$background_method[i],
+                                                    sep = "/"))
+       ){
+      
+      message("Skipping quantile ",quantile_q, " model ",
+              paste(models_to_evaluate$presence_method[i],
+                    models_to_evaluate$background_method[i],
+                    sep = "/")," already done");
+      
+      next
+      }
     
     out_i <- evaluate_disdat(presence_method = models_to_evaluate$presence_method[i],
                     background_method = models_to_evaluate$background_method[i],
@@ -202,7 +214,9 @@ for(q in 1:length(quantiles_to_evaluate)){
   # sens vs spec, color by model, facet by quantile
   # alternatively, can calculate rank, then plot median rank +/- max/min
 
+################################################################################
 
+  # Comparison with Valavi et al 2021
 
 
 
