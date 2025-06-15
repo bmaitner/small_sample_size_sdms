@@ -218,5 +218,19 @@ for(q in 1:length(quantiles_to_evaluate)){
 
   # Comparison with Valavi et al 2021
 
+source("R/get_valavi_stats.R")
+
+if(!file.exists("data/manual_downloads/Valavi/Valavi_model_stats.RDS")){
+
+  valavi_stats <- get_valavi_stats(models_prediction_folder = "data/manual_downloads/Valavi/Models_prediction/")
+  
+  valavi_stats %>% saveRDS(file = "data/manual_downloads/Valavi/Valavi_model_stats.RDS")
+    
+}else{
+
+  valavi_stats <- readRDS(file = "data/manual_downloads/Valavi/Valavi_model_stats.RDS")
+  
+  
+}
 
 
