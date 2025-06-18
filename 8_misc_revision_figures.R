@@ -72,6 +72,9 @@ library(S4DM)
 library(kernlab)
 library(tidyverse)
 library(sf)
+
+
+
 library(DescTools)
 library(foreach)
 library(doParallel)
@@ -185,7 +188,10 @@ for(q in 1:length(quantiles_to_evaluate)){
     quantile_variation_output <-
       bind_rows(quantile_variation_output,
                 out_i$full_model_stats %>%
-                  select(species,pa_sensitivity,full_specificity,pa_AUC)%>%
+                  select(species,
+                         pa_sensitivity,
+                         pa_specificity,
+                         pa_AUC)%>%
                   mutate(model = dr_models_to_evaluate[j],
                          quantile = quantile_q) %>%
                   mutate(pa_AUC = as.numeric(pa_AUC)))
@@ -208,11 +214,82 @@ for(q in 1:length(quantiles_to_evaluate)){
 } #q loop
 
 
-
-
 # Plot
   # sens vs spec, color by model, facet by quantile
   # alternatively, can calculate rank, then plot median rank +/- max/min
+
+
+quantile_variation_output %>%
+  # #filter(n_presence <= 20)%>%
+  # filter(method %in% c("kde / none","vine / none","gaussian / none",
+  #                      "maxnet","ulsif","rulsif",
+  #                      "rangebagging / none","lobagoc / none"))%>%
+  mutate(model = gsub(pattern = "/none",replacement = "",x=model))%>%
+  mutate(model = gsub(pattern = "maxnet",replacement = "Maxnet",x=model))%>%
+  mutate(model = gsub(pattern = "vine",replacement = "Vine",x=model))%>%
+  mutate(model = gsub(pattern = "gaussian",replacement = "Gaussian",x=model))%>%
+  mutate(model = gsub(pattern = "kde",replacement = "KDE",x=model))%>%
+  mutate(model = gsub(pattern = "rangebagging",replacement = "Range-Bagging",x=model))%>%
+  mutate(model = gsub(pattern = "ulsif",replacement = "uLSIF",x=model))%>%
+  mutate(model = gsub(pattern = "lobagoc",replacement = "LOBAG-OC",x=model)) %>%  
+  #mutate(sens_spec_ratio = pa_specificity-pa_sensitivity) %>%
+  group_by(model)%>%
+  #summarise(sens_spec_ratio = median(na.omit(sens_spec_ratio)))%>%
+  summarise(mean_sensitivity = mean(na.omit(pa_sensitivity)),
+            mean_specificity = mean(na.omit(pa_specificity)),
+            ci_low_sensitivity = quantile(x = pa_sensitivity,
+                                          probs = 0.25,
+                                          na.rm=TRUE),
+            ci_high_sensitivity = quantile(x = pa_sensitivity,
+                                           probs = 0.75,
+                                           na.rm=TRUE),
+            ci_low_specificity = quantile(x = pa_specificity,
+                                          probs = 0.25,
+                                          na.rm=TRUE),
+            ci_high_specificity = quantile(x = pa_specificity,
+                                           probs = 0.75,
+                                           na.rm=TRUE)
+            
+  ) %>%
+  ggplot(mapping = aes(x=mean_sensitivity,
+                       y=mean_specificity,
+                       label = model,
+                       color = model))+
+  geom_errorbar(mapping = aes(ymin=ci_low_specificity,
+                              ymax=ci_high_specificity),
+                linewidth = 1)+
+  geom_errorbarh(mapping = aes(xmin=ci_low_sensitivity,
+                               xmax=ci_high_sensitivity),
+                 linewidth = 1)+
+  geom_point(size=3)+
+  scale_x_continuous(expand = c(0, 0),limits = c(0,1.2)) +
+  scale_y_continuous(expand = c(0, 0),limits = c(0,1.2))+
+  ylab("Specificity")+
+  xlab("Sensitivity")+
+  theme_bw()+
+  guides(color="none")+ 
+  geom_text_repel(max.overlaps = 20,
+                  box.padding = 3,
+                  point.padding = 0)%>%
+  facet_wrap(~quantile)->svs_variation
+
+ggsave(plot = svs,
+       filename = "figures/sensitivity_v_specificity_pres_only.jpg",
+       width = 5,
+       height = 5,
+       units = "in",dpi = 600)
+
+ggsave(plot = svs,
+       filename = "figures/sensitivity_v_specificity_pres_only.svg",
+       width = 5,
+       height = 5,
+       units = "in",dpi = 600)
+
+  
+  
+
+
+
 
 ################################################################################
 
