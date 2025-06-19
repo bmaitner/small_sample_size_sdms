@@ -407,10 +407,131 @@ combined_stats <- combined_stats %>%
 
 # Ranking by number of "wins"
   
+  auc_wins_data_poor_summary <-
+  combined_stats %>%
+    filter(n_presence <= 20)%>%
+    group_by(spid) %>%
+    arrange(-pa_AUC) %>%
+    slice_head(n = 1) %>%
+    ungroup() %>%
+    group_by(model)%>%
+    summarize(n_wins = n())%>%
+    arrange(-n_wins)
+
+  auc_wins_all_summary <-
+  combined_stats %>%
+    group_by(spid) %>%
+    arrange(-pa_AUC) %>%
+    slice_head(n = 1) %>%
+    ungroup() %>%
+    group_by(model)%>%
+    summarize(n_wins = n())%>%
+    arrange(-n_wins)
 
 # Testing which models have different distributions
-  
-# Ranking by # of NAs
 
+  # small sample sizess only
+  
+  for(i in 1:length(unique(combined_stats$model))){
+    for(j in 1:length(unique(combined_stats$model))){
+      
+      model_i <- unique(combined_stats$model)[i]
+      model_j <- unique(combined_stats$model)[j]
+      
+      data_x <- combined_stats %>%
+        filter(n_presence <= 20) %>%
+        filter(model==model_i)%>%
+        pull(pa_AUC)
+      
+      data_y <- combined_stats %>%
+        filter(n_presence <= 20) %>%
+        filter(model==model_j)%>%
+        pull(pa_AUC)
+      
+      ti <-tryCatch(wilcox.test(x = data_x,
+                                y = data_y),
+                    error = function(e){e})
+      
+      if(inherits(ti,"error")){
+        ti$p.value <- NA
+        ti$statistic <- NA
+        
+      }
+      
+      out_i <- data.frame(model = model_i,
+                          comparison = model_j,
+                          pval = ti$p.value,
+                          W = ti$statistic,
+                          comparison_difference = mean(data_x,na.rm = TRUE) - mean(data_y,na.rm = TRUE))
+      
+      if(i==1 & j==1){ttest_small_out <- out_i}else(ttest_small_out <- bind_rows(ttest_small_out,out_i))
+      
+      rm(out_i,ti,model_i,model_j,data_x,data_y)
+
+    }#j
+  } #i 
+
+  
+ttest_small_matrix <-    
+ttest_small_out %>%
+  select(model,comparison,pval)%>%
+  mutate(sig_dif = (pval <= 0.05) %>% as.numeric() )%>%
+  select(model,comparison,sig_dif)%>%
+  pivot_wider(values_from = sig_dif,names_from = comparison) %>%
+  column_to_rownames("model")
+
+write.csv(ttest_small_matrix,
+          "tables/small_sample_size_model_comparison_sig_test.csv")
+
+
+# all sample sizes
+
+for(i in 1:length(unique(combined_stats$model))){
+  for(j in 1:length(unique(combined_stats$model))){
+    
+    model_i <- unique(combined_stats$model)[i]
+    model_j <- unique(combined_stats$model)[j]
+    
+    data_x <- combined_stats %>%
+      #filter(n_presence <= 20) %>%
+      filter(model==model_i)%>%
+      pull(pa_AUC)
+    
+    data_y <- combined_stats %>%
+      #filter(n_presence <= 20) %>%
+      filter(model==model_j)%>%
+      pull(pa_AUC)
+    
+    ti <-tryCatch(wilcox.test(x = data_x,
+                              y = data_y),
+                  error = function(e){e})
+    
+    if(inherits(ti,"error")){
+      ti$p.value <- NA
+      ti$statistic <- NA
+      
+    }
+    
+    out_i <- data.frame(model = model_i,
+                        comparison = model_j,
+                        pval = ti$p.value,
+                        W = ti$statistic,
+                        comparison_difference = mean(data_x,na.rm = TRUE) - mean(data_y,na.rm = TRUE))
+    
+    if(i==1 & j==1){ttest_all_out <- out_i}else(ttest_all_out <- bind_rows(ttest_all_out,out_i))
+    
+    rm(out_i,ti,model_i,model_j,data_x,data_y)
+    
+  }#j
+} #i 
+
+
+ttest_all_matrix <-    
+  ttest_all_out %>%
+  select(model,comparison,pval)%>%
+  mutate(sig_dif = (pval <= 0.05) %>% as.numeric() )%>%
+  select(model,comparison,sig_dif)%>%
+  pivot_wider(values_from = sig_dif,names_from = comparison) %>%
+  column_to_rownames("model")
 
 
