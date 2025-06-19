@@ -150,7 +150,10 @@ for(q in 1:length(quantiles_to_evaluate)){
                 
       formatted_out_i <-
               out_i$full_model_stats %>%
-                    select(species,pa_sensitivity,full_specificity,pa_AUC)%>%
+                    select(species,
+                           pa_sensitivity,
+                           pa_specificity,
+                           pa_AUC)%>%
                     mutate(model = paste(models_to_evaluate$presence_method[i],
                                          models_to_evaluate$background_method[i],
                                          sep = "/"),
@@ -373,6 +376,9 @@ combined_stats <- combined_stats %>%
     ungroup()%>%
     arrange(-median_AUC)
 
+  write.csv(x =   combined_stats_data_poor_summary,
+            file = "tables/small_sample_size_comparison_to_Valavi_et_al.csv",
+            row.names = FALSE)
 
 
   combined_stats_all_spp_summary <-
@@ -481,7 +487,12 @@ ttest_small_out %>%
   column_to_rownames("model")
 
 write.csv(ttest_small_matrix,
-          "tables/small_sample_size_model_comparison_sig_test.csv")
+          "tables/small_sample_size_model_comparison_sig_test_matrix.csv")
+
+write.csv(ttest_small_out,
+          "tables/small_sample_size_model_comparison.csv",
+          row.names = FALSE)
+
 
 
 # all sample sizes
@@ -533,5 +544,25 @@ ttest_all_matrix <-
   select(model,comparison,sig_dif)%>%
   pivot_wider(values_from = sig_dif,names_from = comparison) %>%
   column_to_rownames("model")
+
+# How many models are garbage?
+
+Valavi_comparison_bad_model_small_sample_size <-
+combined_stats %>%
+  filter(n_presence <= 20)%>%
+  group_by(model) %>%
+  mutate(bad_model = (pa_AUC <= 0.5) %>% as.numeric())%>%
+  mutate(bad_model = case_when(is.na(bad_model) ~ 1,.default = bad_model))%>%
+  group_by(author,model)%>%
+  summarize(pct_bad_models = (sum(bad_model)/n())*100)%>%
+  ungroup()%>%
+  arrange(pct_bad_models)
+
+write.csv(Valavi_comparison_bad_model_small_sample_size,
+          "tables/Valavi_comparison_bad_model_small_sample_size.csv",
+          row.names = FALSE)
+
+
+
 
 
