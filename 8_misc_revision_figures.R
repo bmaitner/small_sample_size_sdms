@@ -295,19 +295,122 @@ ggsave(plot = svs,
 
   # Comparison with Valavi et al 2021
 
-source("R/get_valavi_stats.R")
+library(ggplot2)
+library(tidyverse)
+library(ggrepel)
 
-if(!file.exists("data/manual_downloads/Valavi/Valavi_model_stats.RDS")){
 
-  valavi_stats <- get_valavi_stats(models_prediction_folder = "data/manual_downloads/Valavi/Models_prediction/")
+# Get Valavi data
+
+  source("R/get_valavi_stats.R")
   
-  valavi_stats %>% saveRDS(file = "data/manual_downloads/Valavi/Valavi_model_stats.RDS")
+  if(!file.exists("data/manual_downloads/Valavi/Valavi_model_stats.RDS")){
+  
+    valavi_stats <- get_valavi_stats(models_prediction_folder = "data/manual_downloads/Valavi/Models_prediction/")
     
-}else{
+    valavi_stats %>% saveRDS(file = "data/manual_downloads/Valavi/Valavi_model_stats.RDS")
+      
+  }else{
+  
+    valavi_stats <- readRDS(file = "data/manual_downloads/Valavi/Valavi_model_stats.RDS")
+    
+  }
 
-  valavi_stats <- readRDS(file = "data/manual_downloads/Valavi/Valavi_model_stats.RDS")
+# Load our data
+
+combined_stats <- 
+  readRDS("outputs/full_model_output_all.RDS") %>%
+    mutate(pa_AUC = as.numeric(pa_AUC))%>%
+  dplyr::select(spid = species,
+                model = method,
+                pa_AUC,
+                pa_correlation) %>%
+    mutate(author = "Maitner et al.") %>%
+    bind_rows(valavi_stats %>%
+                mutate( author = "Valavi et al.")%>%
+                select(-region))
+
+presence_counts <- 
+  readRDS("outputs/full_model_output_all.RDS") %>%
+  select(spid = species,
+         n_presence)%>%
+  na.omit()%>%
+  unique()
+
+combined_stats <- combined_stats %>%
+  left_join(presence_counts,relationship = "many-to-many")
+
+# Ranking by AUC
+
+  combined_stats_data_poor_summary <-
+  combined_stats %>%
+    filter(n_presence <= 20)%>%
+    #mutate(model = gsub(pattern = " / none",replacement = "",x=model))%>%
+    mutate(model = gsub(pattern = "maxnet",replacement = "Maxnet",x=model))%>%
+    mutate(model = gsub(pattern = "vine",replacement = "Vine",x=model))%>%
+    mutate(model = gsub(pattern = "gaussian",replacement = "Gaussian",x=model))%>%
+    mutate(model = gsub(pattern = "kde",replacement = "KDE",x=model))%>%
+    mutate(model = gsub(pattern = "rangebagging",replacement = "Range-Bagging",x=model))%>%
+    mutate(model = gsub(pattern = "ulsif",replacement = "uLSIF",x=model))%>%
+    mutate(model = gsub(pattern = "lobagoc",replacement = "LOBAG-OC",x=model))%>%
+    group_by(author,model)%>%
+    summarise(median_AUC = median(na.omit(pa_AUC)),
+              median_Corr = median(na.omit(pa_correlation)),
+              ci_low_AUC = quantile(x = pa_AUC,
+                                            probs = 0.25,
+                                            na.rm=TRUE),
+              ci_high_AUC = quantile(x = pa_AUC,
+                                             probs = 0.75,
+                                             na.rm=TRUE),
+              ci_low_correlation = quantile(x = pa_correlation,
+                                            probs = 0.25,
+                                            na.rm=TRUE),
+              ci_high_correlation = quantile(x = pa_correlation,
+                                             probs = 0.75,
+                                             na.rm=TRUE)
+              
+    ) %>%
+    ungroup()%>%
+    arrange(-median_AUC)
+
+
+
+  combined_stats_all_spp_summary <-
+    combined_stats %>%
+    mutate(model = gsub(pattern = "maxnet",replacement = "Maxnet",x=model))%>%
+    mutate(model = gsub(pattern = "vine",replacement = "Vine",x=model))%>%
+    mutate(model = gsub(pattern = "gaussian",replacement = "Gaussian",x=model))%>%
+    mutate(model = gsub(pattern = "kde",replacement = "KDE",x=model))%>%
+    mutate(model = gsub(pattern = "rangebagging",replacement = "Range-Bagging",x=model))%>%
+    mutate(model = gsub(pattern = "ulsif",replacement = "uLSIF",x=model))%>%
+    mutate(model = gsub(pattern = "lobagoc",replacement = "LOBAG-OC",x=model))%>%
+    group_by(author,model)%>%
+    summarise(median_AUC = median(na.omit(pa_AUC)),
+              median_Corr = median(na.omit(pa_correlation)),
+              ci_low_AUC = quantile(x = pa_AUC,
+                                    probs = 0.25,
+                                    na.rm=TRUE),
+              ci_high_AUC = quantile(x = pa_AUC,
+                                     probs = 0.75,
+                                     na.rm=TRUE),
+              ci_low_correlation = quantile(x = pa_correlation,
+                                            probs = 0.25,
+                                            na.rm=TRUE),
+              ci_high_correlation = quantile(x = pa_correlation,
+                                             probs = 0.75,
+                                             na.rm=TRUE)
+              
+    ) %>%
+    ungroup() %>%
+    arrange(-median_AUC)
   
+
+# Ranking by number of "wins"
   
-}
+
+# Testing which models have different distributions
+  
+# Ranking by # of NAs
+
 
 
