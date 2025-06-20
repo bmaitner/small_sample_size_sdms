@@ -10,7 +10,9 @@ evaluate_disdat <- function(presence_method = NULL,
                             ratio_method = NULL,
                             quantile = 0.05,
                             verbose = TRUE,
-                            ncl=5){
+                            ncl=5,
+                            record_predictions = FALSE,
+                            predictions_folder = "outputs/model_predictions/"){
   
   if(is.null(presence_method) & is.null(background_method) & is.null(ratio_method)){
     stop("Please supply presence + background methods OR a ratio method")
@@ -20,6 +22,15 @@ evaluate_disdat <- function(presence_method = NULL,
     stop("Please ONLY supply presence + background methods OR a ratio method")
   }
 
+  #make output folder if needed
+    if(record_predictions){
+      
+      if(!dir.exists(predictions_folder)){
+        dir.create(predictions_folder,recursive = TRUE)
+      }
+      
+    }
+  
   if(
     (!is.null(presence_method) & is.null(background_method)) | 
     (is.null(presence_method) & !is.null(background_method))
@@ -762,7 +773,68 @@ evaluate_disdat <- function(presence_method = NULL,
         out_full$runtime <- model_time_full
         out_full$entropy <- mean_ent_full$mean_ent
       
-      }#End code that is only run if the model was fit      
+      }#End code that is only run if the model was fit    
+      
+      
+      # Record model predictions if requested
+      
+        if(record_predictions){
+          
+          predictions_s <- pres_abs_data_s %>%
+            select(siteid,group) %>%
+            mutate(species = species_s,
+                   quantile = quantile)
+          
+          predictions_s$predicted_occurrence <- 0
+          
+          predictions_s$predicted_occurrence[which(pa_suitability_v_occurrence$suitability >= threshold)] <- 1
+          
+                  
+          if(is.null(presence_method) | is.null(background_method)){
+            
+            predictions_s <- 
+            predictions_s %>%
+              mutate(model = ratio_method)
+            
+            
+            arrow::write_parquet(x = predictions_s,
+                                 sink = file.path(predictions_folder,
+                                                  paste(unique(predictions_s$model) %>%
+                                                          gsub(pattern = "/",replacement = "-")
+                                                        ,"_",
+                                                        unique(predictions_s$species),
+                                                        ".gz.parquet",sep = "")),
+                                 compression = "gzip")
+            
+            
+            
+          }else{
+            
+            predictions_s <- 
+              predictions_s %>%
+              mutate(model = paste(presence_method,
+                                   background_method,
+                                   sep = "/")
+                     )
+            
+            
+            arrow::write_parquet(x = predictions_s,
+                                 sink = file.path(predictions_folder,
+                                                  paste(unique(predictions_s$model) %>%
+                                                          gsub(pattern = "/",replacement = "-")
+                                                        ,"_",
+                                                        unique(predictions_s$species),
+                                                        ".gz.parquet",sep = "")),
+                                 compression = "gzip")
+
+          
+            
+            
+          }
+  
+          
+  
+        } # end prediction recording bit
       
       #Save output
       
