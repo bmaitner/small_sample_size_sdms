@@ -85,7 +85,9 @@ tempfile_fold <- "outputs/temp_bakeoff_output_fold.rds"
                     verbose = TRUE,
                     ratio_method = NULL,
                     quantile = 0.05,
-                    ncl = 5)
+                    ncl = 5,
+                    record_predictions = TRUE,
+                    predictions_folder = "outputs/model_predictions/")
     
     full_model_outputs <- rbind(full_model_outputs,
                                 data.frame(pres_method = models_to_evaluate$presence_method[i],
