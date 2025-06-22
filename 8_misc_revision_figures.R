@@ -164,6 +164,8 @@ for(q in 1:length(quantiles_to_evaluate)){
     quantile_variation_output %>%
       saveRDS(file = file.path(quantile_tempfile_full))
     
+    rm(out_i,formatted_out_i)
+    
   }#pnp
   
   for(j in 1:length(dr_models_to_evaluate)){
@@ -184,7 +186,7 @@ for(q in 1:length(quantiles_to_evaluate)){
     
     quantile_variation_output <-
       bind_rows(quantile_variation_output,
-                out_i$full_model_stats %>%
+                out_j$full_model_stats %>%
                   select(species,
                          pa_sensitivity,
                          pa_specificity,
@@ -198,6 +200,8 @@ for(q in 1:length(quantiles_to_evaluate)){
     
     quantile_variation_output %>%
       saveRDS(file = file.path(quantile_tempfile_full))
+    
+    rm(out_j,formatted_out_j)
     
     
   }#dr
