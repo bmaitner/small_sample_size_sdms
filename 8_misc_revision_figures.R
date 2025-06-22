@@ -113,17 +113,13 @@ if(file.exists(quantile_tempfile_full)){
 }
 
 
-#Skipping quantile 0.1 model gaussian/none already done
-
 
 for(q in 1:length(quantiles_to_evaluate)){
   
   quantile_q <- quantiles_to_evaluate[q]
   
   for(i in 1:nrow(models_to_evaluate)){
-    
-    
-    
+
     if(any(quantile_variation_output$quantile == quantile_q &
            quantile_variation_output$model == paste(models_to_evaluate$presence_method[i],
                                                     models_to_evaluate$background_method[i],
@@ -172,11 +168,9 @@ for(q in 1:length(quantiles_to_evaluate)){
   
   for(j in 1:length(dr_models_to_evaluate)){
     
-    
-    if(quantile_q %in% quantile_variation_output$quantile &
-       dr_models_to_evaluate[j] %in% quantile_variation_output$model
-       ){next}
-    
+    if(any(quantile_variation_output$quantile == quantile_q &
+           quantile_variation_output$model == dr_models_to_evaluate[j])
+    ){next}
     
     out_j <- evaluate_disdat(presence_method = NULL,
                              background_method = NULL,
@@ -217,6 +211,8 @@ for(q in 1:length(quantiles_to_evaluate)){
 } #q loop
 
 
+library(ggrepel)
+
 # Plot
   # sens vs spec, color by model, facet by quantile
   # alternatively, can calculate rank, then plot median rank +/- max/min
@@ -236,7 +232,7 @@ quantile_variation_output %>%
   mutate(model = gsub(pattern = "ulsif",replacement = "uLSIF",x=model))%>%
   mutate(model = gsub(pattern = "lobagoc",replacement = "LOBAG-OC",x=model)) %>%  
   #mutate(sens_spec_ratio = pa_specificity-pa_sensitivity) %>%
-  group_by(model)%>%
+  group_by(model,quantile)%>%
   #summarise(sens_spec_ratio = median(na.omit(sens_spec_ratio)))%>%
   summarise(mean_sensitivity = mean(na.omit(pa_sensitivity)),
             mean_specificity = mean(na.omit(pa_specificity)),
@@ -273,8 +269,10 @@ quantile_variation_output %>%
   guides(color="none")+ 
   geom_text_repel(max.overlaps = 20,
                   box.padding = 3,
-                  point.padding = 0)%>%
-  facet_wrap(~quantile)->svs_variation
+                  point.padding = 0)+
+  facet_wrap(~quantile) -> svs_variation
+
+svs_variation
 
 ggsave(plot = svs,
        filename = "figures/sensitivity_v_specificity_pres_only.jpg",
