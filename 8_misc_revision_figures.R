@@ -222,8 +222,20 @@ library(ggrepel)
   # alternatively, can calculate rank, then plot median rank +/- max/min
 
 
+
+presence_counts <- 
+  readRDS("outputs/full_model_output_all.RDS") %>%
+  select(species,
+         n_presence)%>%
+  na.omit()%>%
+  unique()
+
+quantile_variation_output <- quantile_variation_output %>%
+  left_join(presence_counts,relationship = "many-to-many")
+
+
 quantile_variation_output %>%
-  # #filter(n_presence <= 20)%>%
+  #filter(n_presence <= 20)%>%
   # filter(method %in% c("kde / none","vine / none","gaussian / none",
   #                      "maxnet","ulsif","rulsif",
   #                      "rangebagging / none","lobagoc / none"))%>%
@@ -278,22 +290,60 @@ quantile_variation_output %>%
 
 svs_variation
 
-ggsave(plot = svs,
-       filename = "figures/sensitivity_v_specificity_pres_only.jpg",
-       width = 5,
-       height = 5,
-       units = "in",dpi = 600)
-
-ggsave(plot = svs,
-       filename = "figures/sensitivity_v_specificity_pres_only.svg",
-       width = 5,
-       height = 5,
-       units = "in",dpi = 600)
 
   
-  
+quantile_variation_rankings <-
+quantile_variation_output %>%
+  #filter(n_presence <= 20)%>%
+  # filter(method %in% c("kde / none","vine / none","gaussian / none",
+  #                      "maxnet","ulsif","rulsif",
+  #                      "rangebagging / none","lobagoc / none"))%>%
+  mutate(model = gsub(pattern = "/none",replacement = "",x=model))%>%
+  mutate(model = gsub(pattern = "maxnet",replacement = "Maxnet",x=model))%>%
+  mutate(model = gsub(pattern = "vine",replacement = "Vine",x=model))%>%
+  mutate(model = gsub(pattern = "gaussian",replacement = "Gaussian",x=model))%>%
+  mutate(model = gsub(pattern = "kde",replacement = "KDE",x=model))%>%
+  mutate(model = gsub(pattern = "rangebagging",replacement = "Range-Bagging",x=model))%>%
+  mutate(model = gsub(pattern = "ulsif",replacement = "uLSIF",x=model))%>%
+  mutate(model = gsub(pattern = "lobagoc",replacement = "LOBAG-OC",x=model)) %>%  
+  #mutate(sens_spec_ratio = pa_specificity-pa_sensitivity) %>%
+  group_by(model,quantile)%>%
+  #summarise(sens_spec_ratio = median(na.omit(sens_spec_ratio)))%>%
+  summarise(mean_sensitivity = mean(na.omit(pa_sensitivity)),
+            mean_specificity = mean(na.omit(pa_specificity)),
+            median_sensitivity = median(na.omit(pa_sensitivity)),
+            median_specificity = median(na.omit(pa_specificity)),
+            ci_low_sensitivity = quantile(x = pa_sensitivity,
+                                          probs = 0.25,
+                                          na.rm=TRUE),
+            ci_high_sensitivity = quantile(x = pa_sensitivity,
+                                           probs = 0.75,
+                                           na.rm=TRUE),
+            ci_low_specificity = quantile(x = pa_specificity,
+                                          probs = 0.25,
+                                          na.rm=TRUE),
+            ci_high_specificity = quantile(x = pa_specificity,
+                                           probs = 0.75,
+                                           na.rm=TRUE)
+            ) %>%
+  arrange(-mean_sensitivity)%>%
+    group_by(quantile)%>%
+  mutate(sens_rank = row_number())%>%
+    arrange(-mean_specificity)%>%
+    group_by(quantile)%>%
+  mutate(spec_rank = row_number())%>%
+  group_by(quantile)
 
 
+ggplot(data = quantile_variation_rankings,
+       aes(x = quantile,
+           y = mean_specificity/mean_sensitivity,
+           color = model)) +
+  geom_point()+
+  geom_line()+
+  scale_y_log10()+
+  theme_bw()+
+  ylab("Mean Specificity / Mean Sensitivity")
 
 
 ################################################################################
@@ -566,5 +616,11 @@ write.csv(Valavi_comparison_bad_model_small_sample_size,
 
 
 
+###################################
 
+# Overlap between models
+
+library(arrow)
+
+test <- open_dataset("outputs/model_predictions/") %>% slice_head(n = 1000) %>% collect()
 
