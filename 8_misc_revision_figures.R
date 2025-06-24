@@ -335,6 +335,7 @@ quantile_variation_output %>%
   group_by(quantile)
 
 
+sens_to_thresholding <-
 ggplot(data = quantile_variation_rankings,
        aes(x = quantile,
            y = mean_specificity/mean_sensitivity,
@@ -344,6 +345,14 @@ ggplot(data = quantile_variation_rankings,
   scale_y_log10()+
   theme_bw()+
   ylab("Mean Specificity / Mean Sensitivity")
+
+
+ggsave(plot = sens_to_thresholding,
+       filename = "figures/thresholding_impact_on_sensitivity_specificity.jpg",
+       width = 4,
+       height = 3,
+       units = "in",
+       dpi = 300)
 
 
 ################################################################################
