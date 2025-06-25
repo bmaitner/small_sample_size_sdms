@@ -159,7 +159,15 @@ for(i in 1:length(dr_models_to_evaluate)){
   set.seed(2005) # The year Transformers: The Movie is set.
 
   model_i <- 
-    evaluate_disdat(ratio_method = dr_models_to_evaluate[i])
+    evaluate_disdat(ratio_method = dr_models_to_evaluate[i],
+                    verbose = TRUE,
+                    quantile = 0.05,
+                    ncl = 5,
+                    record_predictions = TRUE,
+                    predictions_folder = "outputs/model_predictions/"
+                    )
+  
+  
   
   
   full_model_outputs_dr <- rbind(full_model_outputs_dr,
