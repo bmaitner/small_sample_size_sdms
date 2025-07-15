@@ -656,25 +656,89 @@ write.csv(Valavi_comparison_bad_model_small_sample_size,
 
   # Calc model sens-spec distance
 
-combined_stats <- 
-  readRDS("outputs/full_model_output_all.RDS") %>%
-  mutate(pa_AUC = as.numeric(pa_AUC))
+  combined_stats <- 
+    readRDS("outputs/full_model_output_all.RDS") %>%
+    mutate(pa_AUC = as.numeric(pa_AUC)) %>%
+    mutate(method = gsub(pattern = " ",replacement = "",x = method))
 
   source("R/get_sensspec_distance.R")
 
     sens_spec_dist <- get_sensspec_distance(combined_stats = combined_stats,
-                                            self_comparison = TRUE)
+                                            self_comparison = TRUE,
+                                            model_pairs = model_prediction_agreement %>%
+                                              ungroup%>%
+                                              select(model_a,model_b)%>%
+                                              unique())
+    
+    
+    
+    
 
 
   # Join sens-spec distance to agreement
+
+    sensspec_v_agreement<-
+    sens_spec_dist %>%
+      full_join(model_prediction_agreement,
+                by = c("species","model_a","model_b"))
+
     
-
-
+      
   # Visualize
 
+    library(ggplot2)
+    library(ggpubr)
     
-  
-    # Need make figure showing difference in sens/spec vs model agreement
-    # probably easiest to summarize at model level
+    sensspec_v_agreement %>%
+      ggplot(mapping = aes(x=sens_spec_distance,
+                           y = model_agreement)) +
+      geom_point()
+    
+    
+    sensspec_v_agreement %>%
+      ggplot(mapping = aes(x = sens_spec_distance,
+                           y = Jaccard)) +
+      geom_point()
+    
+    
+    sensspec_v_agreement %>%
+      group_by(model_a,model_b)%>%
+      summarise(sens_spec_distance = mean(sens_spec_distance,na.rm=TRUE),
+                model_agreement = mean(model_agreement,na.rm=TRUE))%>%
+      ggplot(mapping = aes(x=sens_spec_distance,
+                           y = model_agreement)) +
+      geom_point()
 
+    
+    sensspec_v_agreement %>%
+      group_by(model_a,model_b)%>%
+      summarise(sens_spec_distance = mean(sens_spec_distance,na.rm=TRUE),
+                Jaccard = mean(Jaccard,na.rm=TRUE))%>%
+      ggplot(mapping = aes(x=sens_spec_distance,
+                           y = Jaccard)) +
+      geom_point()
+    
+    
+    sensspec_vagreement_plot <-
+    sensspec_v_agreement %>%
+      group_by(model_a,model_b)%>%
+      summarise(sens_spec_distance = mean(sens_spec_distance,na.rm=TRUE),
+                model_agreement = mean(model_agreement,na.rm=TRUE))%>%
+      ggplot(mapping = aes(x=sens_spec_distance,
+                           y = model_agreement)) +
+      geom_point()+
+      stat_cor(method = "pearson",label.x = 0.7)+
+      theme_bw()+
+      xlab("Sensitivity/Specificity Distance")+
+      ylab("Model Agreement")
+    
+    ggsave(filename = "figures/sensspec_vagreement_plot.jpeg",
+           plot = sensspec_vagreement_plot,
+           dpi = 600,
+           width = 5,
+           height = 5,
+           units = "in")
+    
+    
+    
 

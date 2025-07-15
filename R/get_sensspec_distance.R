@@ -1,22 +1,29 @@
 #code to get distance in sens-spec space
 library(sf)
 get_sensspec_distance <- function(combined_stats,
-                                  self_comparison = TRUE){
+                                  self_comparison = TRUE,
+                                  model_pairs = NULL){
   
   
-  # get models
-  
-  models <- unique(combined_stats %>% pull(method))
-  
-  model_pairs <- combn(x = models,m = 2) %>% t()
-  
-  # If needed, self-comparisons should be added in here
-  
-  if(self_comparison){
+  # get model pair if needed
+
+  if(is.null(model_pairs)){
     
-    model_pairs <- rbind(model_pairs,cbind(models,models))
+    models <- unique(combined_stats %>% pull(method))
+    
+    model_pairs <- combn(x = models,m = 2) %>% t()
+    
+    # If needed, self-comparisons should be added in here
+    
+    if(self_comparison){
+      
+      model_pairs <- rbind(model_pairs,cbind(models,models))
+      
+    }
+    
     
   }
+  
   
   
   # iterate over pairs
@@ -27,22 +34,20 @@ get_sensspec_distance <- function(combined_stats,
       
       pair_i <- model_pairs[i,]
       
-      model_a <- pair_i[1]
-      model_b <- pair_i[2]
-      
+      model_a <- pair_i[1] %>% as.character()
+      model_b <- pair_i[2] %>% as.character()
       
       # pull the relevant data for all species/sites and both models
       
+          
       data_a <- combined_stats %>%
         filter(method == model_a) %>%
-        collect() %>%
         select(species,
                sens_a = pa_sensitivity,
                spec_a = pa_specificity)#not sure if its better to use training or testing sens/spec
 
       data_b <- combined_stats %>%
         filter(method == model_b) %>%
-        collect() %>%
         select(species,,
                sens_b = pa_sensitivity,
                spec_b = pa_specificity) #not sure if its better to use training or testing sens/spec
