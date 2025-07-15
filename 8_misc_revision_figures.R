@@ -629,7 +629,14 @@ write.csv(Valavi_comparison_bad_model_small_sample_size,
 
 # Overlap between models
 
-library(arrow)
+  library(arrow)
+  source("R/get_prediction_overlap.R")
+  
+  model_prediction_agreement <-
+    get_prediction_overlap(dataset_folder = "outputs/model_predictions/",
+                           self_comparison = TRUE)
 
-test <- open_dataset("outputs/model_predictions/") %>% slice_head(n = 1000) %>% collect()
+
+# Need make figure showing difference in sens/spec vs model agreement
+
 
