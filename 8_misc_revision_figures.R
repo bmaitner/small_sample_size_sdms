@@ -627,16 +627,54 @@ write.csv(Valavi_comparison_bad_model_small_sample_size,
 
 ###################################
 
-# Overlap between models
+# Investigate overlap between model predictions
 
-  library(arrow)
-  source("R/get_prediction_overlap.R")
+  # Calculate overlap stats
+
+    if(file.exists("outputs/model_prediction_agreement.RDS")){
+      
+      model_prediction_agreement <- readRDS("outputs/model_prediction_agreement.RDS")
+      
+    }else{
+      
+      library(arrow)
+      source("R/get_prediction_overlap.R")
+      
+      
+      
+      model_prediction_agreement <-
+        get_prediction_overlap(dataset_folder = "outputs/model_predictions/",
+                               self_comparison = TRUE)
+      
+      
+      saveRDS(object = model_prediction_agreement,
+              file = "outputs/model_prediction_agreement.RDS")
+      
+      
+      
+    }
+
+  # Calc model sens-spec distance
+
+combined_stats <- 
+  readRDS("outputs/full_model_output_all.RDS") %>%
+  mutate(pa_AUC = as.numeric(pa_AUC))
+
+  source("R/get_sensspec_distance.R")
+
+    sens_spec_dist <- get_sensspec_distance(combined_stats = combined_stats,
+                                            self_comparison = TRUE)
+
+
+  # Join sens-spec distance to agreement
+    
+
+
+  # Visualize
+
+    
   
-  model_prediction_agreement <-
-    get_prediction_overlap(dataset_folder = "outputs/model_predictions/",
-                           self_comparison = TRUE)
-
-
-# Need make figure showing difference in sens/spec vs model agreement
+    # Need make figure showing difference in sens/spec vs model agreement
+    # probably easiest to summarize at model level
 
 
