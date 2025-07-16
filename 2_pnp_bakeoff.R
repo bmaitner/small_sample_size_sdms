@@ -500,3 +500,10 @@ poor_model_table <-
 ############################
 
 # Model runtime table
+
+full_output %>%
+  group_by(model) %>%
+  summarise(median_runtime_s = median(runtime,na.rm = TRUE))%>%
+  mutate(median_runtime_s = round(median_runtime_s,digits = 3)) %>%
+  arrange(median_runtime_s) %>%
+  write.csv("tables/median_model_runtimes.csv",row.names = FALSE)
