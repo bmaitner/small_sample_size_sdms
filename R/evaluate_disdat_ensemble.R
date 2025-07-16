@@ -100,12 +100,12 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
         bg_sd <- apply(X = background_s[,7:ncol(background_s)],MARGIN = 2,FUN = sd)
 
         presence_s[,7:ncol(presence_s)] <-
-        pbsdm:::rescale_w_objects(data = presence_s[,7:ncol(presence_s)],
+        S4DM:::rescale_w_objects(data = presence_s[,7:ncol(presence_s)],
                           mean_vector = bg_means,
                           sd_vector = bg_sd)
         
         background_s[,7:ncol(presence_s)] <-
-          pbsdm:::rescale_w_objects(data = background_s[,7:ncol(presence_s)],
+          S4DM:::rescale_w_objects(data = background_s[,7:ncol(presence_s)],
                             mean_vector = bg_means,
                             sd_vector = bg_sd)
 
@@ -196,7 +196,7 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
       if(verbose){message("Starting CV")}
       
       out <- foreach(fold = 1:length(unique(presence_data$fold)),
-                     .packages = c("pbsdm","tidyverse","DescTools"),
+                     .packages = c("S4DM","tidyverse","DescTools"),
                      .combine = "rbind") %dopar% {
                        
                        if(verbose){message(paste("Starting fold ",fold, " of ",length(unique(presence_data$fold))))}
@@ -347,7 +347,7 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
                   
                   # mean_testing_predictions <-
                   # testing_predictions %>%
-                  # pbsdm:::rescale_w_objects(mean_vector = training_mean_vector,
+                  # S4DM:::rescale_w_objects(mean_vector = training_mean_vector,
                   #                           sd_vector = training_sd_vector) %>%
                   #   rowMeans(na.rm = TRUE)
                   
@@ -359,7 +359,7 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
                   # 
                   # mean_training_predictions <-
                   #   training_predictions %>%
-                  #   pbsdm:::rescale_w_objects(mean_vector = training_mean_vector,
+                  #   S4DM:::rescale_w_objects(mean_vector = training_mean_vector,
                   #                             sd_vector = training_sd_vector) %>%
                   #   rowMeans(na.rm = TRUE)
                   # 
@@ -720,7 +720,7 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
 #       
 #       mean_full_predictions <-
 #         full_predictions %>%
-#         pbsdm:::rescale_w_objects(mean_vector = full_mean_vector,
+#         S4DM:::rescale_w_objects(mean_vector = full_mean_vector,
 #                                   sd_vector = full_sd_vector) %>%
 #         rowMeans(na.rm = TRUE)
       
@@ -810,7 +810,7 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
       # rescale presence abscence data
       
         pres_abs_data_s[,5:ncol(pres_abs_data_s)] <-
-          pbsdm:::rescale_w_objects(data = pres_abs_data_s[,5:ncol(pres_abs_data_s)],
+          S4DM:::rescale_w_objects(data = pres_abs_data_s[,5:ncol(pres_abs_data_s)],
                             mean_vector = bg_means,
                             sd_vector = bg_sd)
       
@@ -863,7 +863,7 @@ evaluate_ensemble_disdat <- function(model_vector = NULL,
             # 
             # mean_pa_predictions <-
             #   pa_predictions %>%
-            #   pbsdm:::rescale_w_objects(mean_vector = full_mean_vector,
+            #   S4DM:::rescale_w_objects(mean_vector = full_mean_vector,
             #                             sd_vector = full_sd_vector) %>%
             #   rowMeans(na.rm = TRUE)
             
