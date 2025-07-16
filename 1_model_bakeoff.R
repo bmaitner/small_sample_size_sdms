@@ -238,8 +238,8 @@ fold_model_output_all <- rbind(fold_model_outputs,fold_model_outputs_dr)
 full_model_output_all <- rbind(full_model_outputs,full_model_outputs_dr)
 
 
-#saveRDS(object = full_model_output_all,file = "outputs/full_model_output_all.RDS")
-#saveRDS(object = fold_model_output_all,file = "outputs/fold_model_output_all.RDS")
+# saveRDS(object = full_model_output_all,file = "outputs/full_model_output_all.RDS")
+# saveRDS(object = fold_model_output_all,file = "outputs/fold_model_output_all.RDS")
 
 
 ########################
@@ -309,7 +309,7 @@ ggsave(plot = sens_spec_gradient,filename = "figures/sens_spec_gradient.svg",
 
 #How many time does lobagoc beat maxnet?
 
-full %>%
+full_model_output_all %>%
   filter(method %in% c("rangebagging / none","maxnet")) %>%
   group_by(species)%>%
   arrange(species,pa_AUC)%>%
@@ -321,7 +321,7 @@ full %>%
 #88/(88+138) #39%
 
 
-full %>%
+full_model_output_all %>%
   filter(method %in% c("lobagoc / none","maxnet")) %>%
   group_by(species)%>%
   arrange(species,desc(pa_AUC))%>%
