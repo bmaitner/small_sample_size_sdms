@@ -31,7 +31,7 @@ data("sample_points")
 
 env <- rast(system.file('ex/sample_env.tif', package="S4DM"))  
 
-env <-env[[1]]
+env <- env[[1]]
 
 # And we'll rescale the variables as well
 
@@ -110,7 +110,7 @@ ggplot(data = plot_data,
 
 ##############################
 
-# simpler model to show the overall i`dea
+# simpler model to show the overall idea
 
 plot_data <-
 bind_rows(
