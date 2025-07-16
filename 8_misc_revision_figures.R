@@ -1,7 +1,5 @@
 # This file contains additional figures that were added during revision
 
-
-
 #########################################
 
 # Example map of sites
@@ -10,7 +8,7 @@ library(tidyverse)
 library(disdat)
 
 regions <- c("AWT", "CAN", "NSW", "NZ", "SA", "SWI")
-data_i <- disData(region = region_i)
+data_i <- disData(region = "AWT")
 
 data_i$bg %>%
   select(x,y) %>%
@@ -362,7 +360,6 @@ ggsave(plot = sens_to_thresholding,
 library(ggplot2)
 library(tidyverse)
 library(ggrepel)
-
 
 # Get Valavi data
 
