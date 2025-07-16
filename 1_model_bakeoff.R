@@ -309,30 +309,52 @@ ggsave(plot = sens_spec_gradient,filename = "figures/sens_spec_gradient.svg",
 
 # Table of times each model wins
 
-wins_per_model <- 
-  full_model_output_all %>%
+  wins_per_model <- 
+    full_model_output_all %>%
+      ungroup() %>%
+      group_by(species) %>%
+      arrange(desc(pa_AUC)) %>%
+      slice_head(n = 1) %>%
+      ungroup() %>%
+      select(species,method) %>%
+    group_by(method) %>%
+    summarise(wins = n()) %>%
+    arrange(desc(wins)) %>%
+    mutate(pct_wins = (wins/sum(wins)*100) %>% round())
+  
+  write.csv(x = wins_per_model,
+            file = "tables/wins_per_model_all_sample_sizes.csv",
+            row.names = FALSE)
+
+# How many non-maxent models win?
+
+  wins_per_model %>%
+    filter(wins > 0) %>%
+    filter(method != "maxnet")%>%
+    nrow()
+
+# Table of wins for small sample size species  
+  
+  
+  wins_per_ssss_model <- 
+    full_model_output_all %>%
     ungroup() %>%
+    filter(n_presence <= 20) %>%
     group_by(species) %>%
     arrange(desc(pa_AUC)) %>%
     slice_head(n = 1) %>%
     ungroup() %>%
     select(species,method) %>%
-  group_by(method) %>%
-  summarise(wins = n()) %>%
-  arrange(desc(wins)) %>%
-  mutate(pct_wins = (wins/sum(wins)*100) %>% round())
-
-write.csv(x = wins_per_model,
-          file = "tables/wins_per_model_all_sample_sizes.csv",
-          row.names = FALSE)
-
-# How many non-maxent models win?
-
-wins_per_model %>%
-  filter(wins > 0) %>%
-  nrow()
-
-
+    group_by(method) %>%
+    summarise(wins = n()) %>%
+    arrange(desc(wins)) %>%
+    mutate(pct_wins = (wins/sum(wins)*100) %>% round())
+  
+  write.csv(x = wins_per_ssss_model,
+            file = "tables/wins_per_model_small_sample_sizes.csv",
+            row.names = FALSE)
+  
+  
 ##########################################################################
 
 

@@ -1,0 +1,18 @@
+"method","wins","pct_wins"
+"maxnet",9,26
+"rulsif",4,12
+"rangebagging / rangebagging",3,9
+"kde / vine",2,6
+"ulsif",2,6
+"vine / kde",2,6
+"vine / lobagoc",2,6
+"gaussian / gaussian",1,3
+"gaussian / kde",1,3
+"gaussian / none",1,3
+"kde / gaussian",1,3
+"kde / kde",1,3
+"kde / lobagoc",1,3
+"lobagoc / lobagoc",1,3
+"rangebagging / none",1,3
+"rangebagging / vine",1,3
+"vine / vine",1,3
