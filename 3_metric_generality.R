@@ -293,7 +293,7 @@ ggsave(filename = "figures/training_vs_pa_metric_correlations.jpeg",
 
 ###################################################
 
-# Testing v training correlations
+# Testing v pa correlations
 
 data_for_cor_test<-
 combined_output %>%
