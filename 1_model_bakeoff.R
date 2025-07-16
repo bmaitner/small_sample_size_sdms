@@ -250,7 +250,7 @@ library(ggrepel)
 library(grid)
 
 
-temp<-
+temp <-
 full_model_output_all %>%
   #filter(n_presence <= 20)%>%
   filter(method %in% c("kde / none","vine / none","gaussian / none",
@@ -307,32 +307,31 @@ ggsave(plot = sens_spec_gradient,filename = "figures/sens_spec_gradient.svg",
 
 ################
 
-#How many time does rb beat maxnet?
+# Table of times each model wins
 
-full_model_output_all %>%
-  filter(method %in% c("rangebagging / none","maxnet")) %>%
-  group_by(species)%>%
-  arrange(species,pa_AUC)%>%
-  slice_head(n = 1)%>%
-  ungroup()%>%
-  select(method)%>%
-  table()
+wins_per_model <- 
+  full_model_output_all %>%
+    ungroup() %>%
+    group_by(species) %>%
+    arrange(desc(pa_AUC)) %>%
+    slice_head(n = 1) %>%
+    ungroup() %>%
+    select(species,method) %>%
+  group_by(method) %>%
+  summarise(wins = n()) %>%
+  arrange(desc(wins)) %>%
+  mutate(pct_wins = (wins/sum(wins)*100) %>% round())
 
-#88/(88+138) #39%
+write.csv(x = wins_per_model,
+          file = "tables/wins_per_model_all_sample_sizes.csv",
+          row.names = FALSE)
 
-#How many time does lobagoc beat maxnet?
+# How many non-maxent models win?
 
-full_model_output_all %>%
-  filter(method %in% c("lobagoc / none","maxnet")) %>%
-  group_by(species)%>%
-  arrange(species,desc(pa_AUC))%>%
-  select(species,method,pa_AUC)%>%
-  slice_head(n = 1)%>%
-  ungroup()%>%
-  select(method)%>%
-  table()
+wins_per_model %>%
+  filter(wins > 0) %>%
+  nrow()
 
-  #45/(45+181) #20%
 
 ##########################################################################
 
