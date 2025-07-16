@@ -496,3 +496,7 @@ poor_model_table <-
             pct_na_spec = round((sum(is.na(pa_specificity))/n())*100),
             pct_na_auc =round(( sum(is.na(pa_AUC))/n())*100),
             pct_bad_aucs = round(((sum(pa_AUC < 0.5,na.rm = TRUE)+sum(is.na(pa_AUC)))/n())*100))
+
+############################
+
+# Model runtime table
