@@ -299,7 +299,10 @@ metric_corr_data %>%
 
 ggsave(filename = "figures/training_vs_pa_metric_correlations.jpeg",
        plot = correlations_training_vs_pa,
-       dpi = 600,width = 10,height = 5,units = "in")
+       dpi = 600,
+       width = 10,
+       height = 5,
+       units = "in")
 
 
 ###################################################
