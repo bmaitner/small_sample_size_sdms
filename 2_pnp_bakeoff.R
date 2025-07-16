@@ -59,9 +59,9 @@ library(tidyverse)
   # Table 1: performance ranked with Presence/Abscence data
   
     Table1 <-
-      
     full_output %>%
       filter(model != "CVmaxnet" ) %>%
+      mutate(pa_TSS = pa_sensitivity + pa_specificity - 1) %>%
       group_by(model) %>%
       summarise('median PA AUC' = na.omit(pa_AUC) %>% median(),
                 'mean PA AUC' = na.omit(pa_AUC) %>% mean(),
@@ -71,7 +71,8 @@ library(tidyverse)
                 'mean PA pAUC (specificity 0.8 -1)' = na.omit(pa_pAUC_specificity) %>% mean(),
                 'mean PA prediction accuracy' = na.omit(pa_prediction_accuracy) %>% mean(),
                 'mean PA correlation' = na.omit(pa_correlation) %>% mean(),
-                'mean PA kappa' = na.omit(pa_kappa) %>% mean()) %>%
+                'mean PA kappa' = na.omit(pa_kappa) %>% mean(),
+                'mean PA TSS' = na.omit(pa_TSS) %>% mean()) %>%
     arrange(-`mean PA AUC`)
 
   Table1[2:ncol(Table1)] <- Table1[2:ncol(Table1)] %>% round(digits = 3)
@@ -88,6 +89,7 @@ library(tidyverse)
   full_output %>%
     filter(model != "CVmaxnet" ) %>%
     filter(n_presence <= 20) %>%
+    mutate(pa_TSS = pa_sensitivity + pa_specificity - 1) %>%
     group_by(model) %>%
     summarise('median PA AUC' = na.omit(pa_AUC) %>% median(),
               'mean PA AUC' = na.omit(pa_AUC) %>% mean(),
@@ -97,7 +99,8 @@ library(tidyverse)
               'mean PA pAUC (specificity 0.8 -1)' = na.omit(pa_pAUC_specificity) %>% mean(),
               'mean PA prediction accuracy' = na.omit(pa_prediction_accuracy) %>% mean(),
               'mean PA correlation' = na.omit(pa_correlation) %>% mean(),
-              'mean PA kappa' = na.omit(pa_kappa) %>% mean()) %>%
+              'mean PA kappa' = na.omit(pa_kappa) %>% mean(),
+              'mean PA TSS' = na.omit(pa_TSS) %>% mean()) %>%
     arrange(-`mean PA AUC`)
   
   Table2[2:ncol(Table2)] <- Table2[2:ncol(Table2)] %>% round(digits = 3)
