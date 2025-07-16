@@ -353,7 +353,14 @@ ggsave(plot = sens_spec_gradient,filename = "figures/sens_spec_gradient.svg",
   write.csv(x = wins_per_ssss_model,
             file = "tables/wins_per_model_small_sample_sizes.csv",
             row.names = FALSE)
+
+  # How many non-maxent models win?
   
+    wins_per_ssss_model %>%
+      filter(wins > 0) %>%
+      filter(method != "maxnet")%>%
+      nrow()
+    
   
 ##########################################################################
 
