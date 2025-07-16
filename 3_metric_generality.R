@@ -114,7 +114,6 @@ combined_output %>%
   out <- cor(x=combined_output$full_AUC,y=combined_output$pa_AUC,use="pairwise.complete.obs")
   out <- ci_cor(x=combined_output$full_AUC,y=combined_output$pa_AUC,use="pairwise.complete.obs")$interval[1]
   
-out$interval[1] 
 
   
 combined_output %>%
