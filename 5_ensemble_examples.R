@@ -143,18 +143,20 @@ library(ggpmisc)
   
   fl_bbox <- st_bbox(fl)
 
-source("R/profile_ensemble.R")  
-
+if(!file.exists("outputs/ensemble_profile_100.RDS")){
+  
+  source("R/profile_ensemble.R")  
+  
   for(i in 1:nrow(fl_counts)){
     
     print(i)
     
     out_i <- profile_ensemble(csv_file = fl_counts$file[i],
-                     ensemble = c("kde/kde","rulsif","maxnet"),
-                     env = env,
-                     quantile = 0.05,
-                     focal_bbox = fl_bbox)
-  
+                              ensemble = c("kde/kde","rulsif","maxnet"),
+                              env = env,
+                              quantile = 0.05,
+                              focal_bbox = fl_bbox)
+    
     if(i == 1){
       
       ensemble_profiles <- out_i
@@ -168,7 +170,11 @@ source("R/profile_ensemble.R")
   }
   
   #saveRDS(object = ensemble_profiles,file = "outputs/ensemble_profile_100.RDS")  
-  #ensemble_profiles <- readRDS("outputs/ensemble_profile_100.RDS")
+  
+  
+}  
+  
+  ensemble_profiles <- readRDS("outputs/ensemble_profile_100.RDS")
     
 # review ensembles
   
