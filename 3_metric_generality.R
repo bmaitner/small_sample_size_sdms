@@ -270,7 +270,18 @@ bind_rows(
       dplyr::select(model,full_correlation,pa_correlation)%>%
       mutate(metric = "correlation")%>%
       rename(full_value = full_correlation,
-             pa_value = pa_correlation)) -> metric_corr_data
+             pa_value = pa_correlation))%>%
+  bind_rows(
+    combined_output %>%
+      filter(n_presence <= 20) %>%
+      mutate(pa_TSS = pa_sensitivity + pa_specificity - 1,
+             full_TSS = full_sensitivity + full_specificity - 1) %>%
+      group_by(model) %>%
+      #filter(!all(is.na(pa_AUC))) %>%
+      dplyr::select(model,full_TSS,pa_TSS)%>%
+      mutate(metric = "TSS")%>%
+      rename(full_value = full_TSS,
+             pa_value = pa_TSS)) -> metric_corr_data
 
 
 # Plot of correlations
@@ -281,7 +292,7 @@ metric_corr_data %>%
   geom_point(aes(color = model))+
   stat_cor(method = "pearson",)+
   geom_abline(slope = 1,intercept = 0)+
-  facet_wrap(~metric)+
+  facet_wrap(~metric,ncol=2,scale="free")+
   theme_bw()+
   xlab("Value (Training Data)")+
   ylab("Value (P/A Data)")
