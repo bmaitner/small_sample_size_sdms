@@ -247,7 +247,7 @@ library(tidyverse)
             row.names = FALSE)
   
   all_sample_comparable_to_best$p_val_table %>%
-    filter(pa_AUC > 0.05)->all_value_useful_models
+    filter(pa_AUC > 0.05) -> all_value_useful_models
   
     
   full_output %>%

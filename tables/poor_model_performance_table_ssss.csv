@@ -1,0 +1,34 @@
+"model","pct_na_sens","pct_na_spec","pct_na_auc","pct_bad_aucs"
+"rangebagging / rangebagging",0,0,0,7
+"gaussian / none",0,0,0,9
+"gaussian / rangebagging",0,0,0,9
+"gaussian / kde",0,0,0,12
+"gaussian / lobagoc",0,0,0,12
+"kde / none",0,0,0,12
+"kde / rangebagging",0,0,0,12
+"rulsif",0,0,0,12
+"ulsif",0,0,0,12
+"rangebagging / lobagoc",0,0,0,13
+"rangebagging / none",0,0,0,13
+"kde / kde",0,0,0,15
+"kde / lobagoc",0,0,0,15
+"maxnet",0,0,0,15
+"vine / lobagoc",3,3,0,15
+"gaussian / gaussian",0,0,0,18
+"gaussian / vine",0,0,0,18
+"kde / vine",0,0,0,18
+"vine / gaussian",3,3,3,18
+"vine / kde",3,3,3,18
+"vine / none",3,3,3,18
+"vine / rangebagging",3,3,3,18
+"kde / gaussian",0,0,0,21
+"vine / vine",3,3,3,21
+"rangebagging / kde",0,0,0,23
+"lobagoc / kde",9,9,9,26
+"lobagoc / lobagoc",9,9,3,26
+"lobagoc / gaussian",18,18,18,32
+"lobagoc / rangebagging",12,12,12,32
+"lobagoc / vine",18,18,18,32
+"lobagoc / none",18,18,18,35
+"rangebagging / gaussian",0,0,0,37
+"rangebagging / vine",0,0,0,37
