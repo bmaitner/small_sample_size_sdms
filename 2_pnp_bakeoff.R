@@ -24,7 +24,7 @@ library(tidyverse)
            full_AUC = as.numeric(full_AUC)) -> full_output_dr
   
   full_output_dr %>%
-    bind_rows(full_output)->full_output
+    bind_rows(full_output) -> full_output
   
   full_output %>%
     mutate(model = case_when(!is.na(ratio_method) ~ ratio_method,
@@ -225,6 +225,12 @@ library(tidyverse)
         write.csv(file = "tables/all_sample_size_comparison_to_maxnet.csv",
                   row.names = FALSE)
       
+      # What proportion of algorithms were not significantly worse than maxent?
+      
+      small_samples_models_v_maxent %>%
+        filter(model != "maxnet")%>%
+        mutate(signif = as.numeric(signif))%>%
+        summarise(Pct_ns_from_maxent = sum(!signif)/n()*100)
         
 ##################
       
