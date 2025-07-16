@@ -307,7 +307,7 @@ ggsave(plot = sens_spec_gradient,filename = "figures/sens_spec_gradient.svg",
 
 ################
 
-#How many time does lobagoc beat maxnet?
+#How many time does rb beat maxnet?
 
 full_model_output_all %>%
   filter(method %in% c("rangebagging / none","maxnet")) %>%
@@ -320,6 +320,7 @@ full_model_output_all %>%
 
 #88/(88+138) #39%
 
+#How many time does lobagoc beat maxnet?
 
 full_model_output_all %>%
   filter(method %in% c("lobagoc / none","maxnet")) %>%

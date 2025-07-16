@@ -1,0 +1,65 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' class='svglite' width='432.00pt' height='288.00pt' viewBox='0 0 432.00 288.00'>
+<defs>
+  <style type='text/css'><![CDATA[
+    .svglite line, .svglite polyline, .svglite polygon, .svglite path, .svglite rect, .svglite circle {
+      fill: none;
+      stroke: #000000;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-miterlimit: 10.00;
+    }
+    .svglite text {
+      white-space: pre;
+    }
+  ]]></style>
+</defs>
+<rect width='100%' height='100%' style='stroke: none; fill: #FFFFFF;'/>
+<defs>
+  <clipPath id='cpMC4wMHw0MzIuMDB8MC4wMHwyODguMDA='>
+    <rect x='0.00' y='0.00' width='432.00' height='288.00' />
+  </clipPath>
+</defs>
+<g clip-path='url(#cpMC4wMHw0MzIuMDB8MC4wMHwyODguMDA=)'>
+<rect x='0.000000000000032' y='0.00' width='432.00' height='288.00' style='stroke-width: 1.07; stroke: #FFFFFF; fill: #FFFFFF;' />
+<rect x='17.14' y='14.40' width='400.46' height='157.48' style='stroke-width: 1.07; stroke: none; fill: #FFFFFF;' />
+<line x1='17.14' y1='93.14' x2='417.60' y2='93.14' style='stroke-width: 1.07; stroke-linecap: butt;' />
+<circle cx='138.27' cy='93.14' r='1.95' style='stroke-width: 0.71; fill: #000000;' />
+<circle cx='376.38' cy='93.14' r='1.95' style='stroke-width: 0.71; fill: #000000;' />
+<circle cx='225.95' cy='93.14' r='1.95' style='stroke-width: 0.71; fill: #000000;' />
+<circle cx='162.64' cy='93.14' r='1.95' style='stroke-width: 0.71; fill: #000000;' />
+<circle cx='204.89' cy='93.14' r='1.95' style='stroke-width: 0.71; fill: #000000;' />
+<circle cx='208.83' cy='93.14' r='1.95' style='stroke-width: 0.71; fill: #000000;' />
+<circle cx='217.76' cy='93.14' r='1.95' style='stroke-width: 0.71; fill: #000000;' />
+<circle cx='252.98' cy='93.14' r='1.95' style='stroke-width: 0.71; fill: #000000;' />
+<line x1='124.20' y1='94.47' x2='136.78' y2='93.28' style='stroke-width: 1.07;' />
+<line x1='390.65' y1='79.99' x2='376.98' y2='92.59' style='stroke-width: 1.07;' />
+<line x1='249.86' y1='128.88' x2='226.34' y2='93.72' style='stroke-width: 1.07;' />
+<line x1='125.70' y1='125.41' x2='162.01' y2='93.68' style='stroke-width: 1.07;' />
+<line x1='168.78' y1='63.51' x2='204.23' y2='92.60' style='stroke-width: 1.07;' />
+<line x1='184.71' y1='103.02' x2='207.78' y2='93.57' style='stroke-width: 1.07;' />
+<line x1='243.67' y1='79.93' x2='218.69' y2='92.66' style='stroke-width: 1.07;' />
+<line x1='290.94' y1='97.67' x2='254.44' y2='93.31' style='stroke-width: 1.07;' />
+<text x='99.10' y='98.46' text-anchor='middle' style='font-size: 11.04px; font-family: "Arial";' textLength='46.60px' lengthAdjust='spacingAndGlyphs'>Gaussian</text>
+<text x='391.83' y='78.19' text-anchor='middle' style='font-size: 11.04px; font-family: "Arial";' textLength='22.68px' lengthAdjust='spacingAndGlyphs'>KDE</text>
+<text x='250.73' y='138.58' text-anchor='middle' style='font-size: 11.04px; font-family: "Arial";' textLength='58.23px' lengthAdjust='spacingAndGlyphs'>LOBAG-OC</text>
+<text x='124.28' y='135.11' text-anchor='middle' style='font-size: 11.04px; font-family: "Arial";' textLength='36.17px' lengthAdjust='spacingAndGlyphs'>Maxnet</text>
+<text x='163.91' y='61.71' text-anchor='middle' style='font-size: 11.04px; font-family: "Arial";' textLength='76.65px' lengthAdjust='spacingAndGlyphs'>Range-Bagging</text>
+<text x='181.95' y='112.72' text-anchor='middle' style='font-size: 11.04px; font-family: "Arial";' textLength='21.87px' lengthAdjust='spacingAndGlyphs'>Vine</text>
+<text x='247.51' y='78.13' text-anchor='middle' style='font-size: 11.04px; font-family: "Arial";' textLength='33.11px' lengthAdjust='spacingAndGlyphs'>ruLSIF</text>
+<text x='307.45' y='101.85' text-anchor='middle' style='font-size: 11.04px; font-family: "Arial";' textLength='29.43px' lengthAdjust='spacingAndGlyphs'>uLSIF</text>
+<text x='80.85' y='227.79' text-anchor='middle' style='font-size: 12.00px; font-family: "Arial";' textLength='82.04px' lengthAdjust='spacingAndGlyphs'>High Sensitivity</text>
+<text x='80.85' y='245.07' text-anchor='middle' style='font-size: 12.00px; font-family: "Arial";' textLength='95.40px' lengthAdjust='spacingAndGlyphs'>Absences Correct</text>
+<text x='80.85' y='262.35' text-anchor='middle' style='font-size: 12.00px; font-family: "Arial";' textLength='128.09px' lengthAdjust='spacingAndGlyphs'>Assumes poor sampling</text>
+<text x='353.89' y='227.79' text-anchor='middle' style='font-size: 12.00px; font-family: "Arial";' textLength='82.04px' lengthAdjust='spacingAndGlyphs'>High Specificity</text>
+<text x='353.89' y='245.07' text-anchor='middle' style='font-size: 12.00px; font-family: "Arial";' textLength='99.40px' lengthAdjust='spacingAndGlyphs'>Presences Correct</text>
+<text x='353.89' y='262.35' text-anchor='middle' style='font-size: 12.00px; font-family: "Arial";' textLength='130.77px' lengthAdjust='spacingAndGlyphs'>Assumes good sampling</text>
+<rect x='17.14' y='14.40' width='400.46' height='157.48' style='stroke-width: 1.07; stroke: #333333;' />
+<text x='35.34' y='183.11' text-anchor='middle' style='font-size: 8.80px;fill: #4D4D4D; font-family: "Arial";' textLength='15.17px' lengthAdjust='spacingAndGlyphs'>-1.0</text>
+<text x='126.36' y='183.11' text-anchor='middle' style='font-size: 8.80px;fill: #4D4D4D; font-family: "Arial";' textLength='15.17px' lengthAdjust='spacingAndGlyphs'>-0.5</text>
+<text x='217.37' y='183.11' text-anchor='middle' style='font-size: 8.80px;fill: #4D4D4D; font-family: "Arial";' textLength='12.24px' lengthAdjust='spacingAndGlyphs'>0.0</text>
+<text x='308.38' y='183.11' text-anchor='middle' style='font-size: 8.80px;fill: #4D4D4D; font-family: "Arial";' textLength='12.24px' lengthAdjust='spacingAndGlyphs'>0.5</text>
+<text x='399.40' y='183.11' text-anchor='middle' style='font-size: 8.80px;fill: #4D4D4D; font-family: "Arial";' textLength='12.24px' lengthAdjust='spacingAndGlyphs'>1.0</text>
+<text x='217.37' y='198.44' text-anchor='middle' style='font-size: 15.00px; font-family: "Arial";' textLength='148.38px' lengthAdjust='spacingAndGlyphs'>Sensitivity - Specificity</text>
+</g>
+</svg>
