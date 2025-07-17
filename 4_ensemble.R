@@ -76,7 +76,7 @@ source("R/evaluate_disdat_ensemble.R")
     geom_point()+
     geom_abline(slope = 1,intercept = 0)
 
-#   
+# Vote AUCs tend to be better  
   ensemble_fold %>%
     filter(n_presence <= 20)%>%
     ggplot(mapping = aes(x=testing_AUC,
@@ -84,7 +84,7 @@ source("R/evaluate_disdat_ensemble.R")
     geom_point()+
     geom_abline(slope = 1,intercept = 0)
   
-# Pred acc (always higher with ensemble averaging vs vote thresholding)  
+# Pred acc (tends to be higher when using votes)  
   
   ensemble_fold %>%
     ggplot(mapping = aes(x=testing_prediction_accuracy,
@@ -100,7 +100,7 @@ source("R/evaluate_disdat_ensemble.R")
     geom_point()+
     geom_abline(slope = 1,intercept = 0)
 
-# Spec
+# Spec #higher when using votes
   
   ensemble_fold %>%
     ggplot(mapping = aes(x=testing_specificity,
@@ -306,11 +306,12 @@ ggsave(filename = "figures/ensemble_metrics.jpg",
      filter(n_presence <= 20)%>%
      filter(metric != "correlation")%>%
      group_by(model,metric) %>%
-     summarise(mean_value = mean(value))%>%
+     summarise(mean_value = mean(value,na.rm=TRUE))%>%
      pivot_wider(names_from = "metric", values_from = "mean_value")%>%
+     mutate(TSS = sensitivity+specificity-1) %>%
      arrange(-specificity)%>%
-     dplyr::select(model,`prediction accuracy`,specificity,sensitivity,kappa)%>%
-     mutate(across(1:4, function(x){round(x,digits = 3)}))-> ensemble_table
+     dplyr::select(model,`prediction accuracy`,specificity,sensitivity,kappa,TSS)%>%
+     mutate(across(1:5, function(x){round(x,digits = 2)}))-> ensemble_table
    
    ensemble_table
    
