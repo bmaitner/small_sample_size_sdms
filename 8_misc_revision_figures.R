@@ -416,17 +416,18 @@ combined_stats <- combined_stats %>%
     mutate(model = gsub(pattern = "lobagoc",replacement = "LOBAG-OC",x=model))%>%
     group_by(author,model)%>%
     summarise(median_AUC = median(na.omit(pa_AUC)),
+              mean_AUC = mean(pa_AUC,na.rm=TRUE),
               median_Corr = median(na.omit(pa_correlation)),
-              ci_low_AUC = quantile(x = pa_AUC,
+              AUC_Q1 = quantile(x = pa_AUC,
                                             probs = 0.25,
                                             na.rm=TRUE),
-              ci_high_AUC = quantile(x = pa_AUC,
+              AUC_Q3 = quantile(x = pa_AUC,
                                              probs = 0.75,
                                              na.rm=TRUE),
-              ci_low_correlation = quantile(x = pa_correlation,
+              correlation_Q1 = quantile(x = pa_correlation,
                                             probs = 0.25,
                                             na.rm=TRUE),
-              ci_high_correlation = quantile(x = pa_correlation,
+              correlation_Q3 = quantile(x = pa_correlation,
                                              probs = 0.75,
                                              na.rm=TRUE)
               
@@ -450,17 +451,18 @@ combined_stats <- combined_stats %>%
     mutate(model = gsub(pattern = "lobagoc",replacement = "LOBAG-OC",x=model))%>%
     group_by(author,model)%>%
     summarise(median_AUC = median(na.omit(pa_AUC)),
+              mean_AUC = mean(pa_AUC,na.rm=TRUE),
               median_Corr = median(na.omit(pa_correlation)),
-              ci_low_AUC = quantile(x = pa_AUC,
+              AUC_Q1 = quantile(x = pa_AUC,
                                     probs = 0.25,
                                     na.rm=TRUE),
-              ci_high_AUC = quantile(x = pa_AUC,
+              AUC_Q3 = quantile(x = pa_AUC,
                                      probs = 0.75,
                                      na.rm=TRUE),
-              ci_low_correlation = quantile(x = pa_correlation,
+              correlation_Q1 = quantile(x = pa_correlation,
                                             probs = 0.25,
                                             na.rm=TRUE),
-              ci_high_correlation = quantile(x = pa_correlation,
+              correlation_Q3 = quantile(x = pa_correlation,
                                              probs = 0.75,
                                              na.rm=TRUE)
               
@@ -475,7 +477,7 @@ combined_stats <- combined_stats %>%
   combined_stats %>%
     filter(n_presence <= 20)%>%
     group_by(spid) %>%
-    arrange(-pa_AUC) %>%
+    arrange(desc(pa_AUC)) %>%
     slice_head(n = 1) %>%
     ungroup() %>%
     group_by(model)%>%
@@ -485,7 +487,7 @@ combined_stats <- combined_stats %>%
   auc_wins_all_summary <-
   combined_stats %>%
     group_by(spid) %>%
-    arrange(-pa_AUC) %>%
+    arrange(desc(pa_AUC)) %>%
     slice_head(n = 1) %>%
     ungroup() %>%
     group_by(model)%>%

@@ -329,9 +329,9 @@ combined_output %>%
   select(species,model,`mean testing_AUC`,pa_AUC) %>%
   na.omit()%>%
   group_by(species)%>%
-  arrange(species,-pa_AUC)%>%
+  arrange(species,desc(pa_AUC))%>%
   mutate(pa_rank = row_number())%>%
-  arrange(species,-`mean testing_AUC`)%>%
+  arrange(species,desc(`mean testing_AUC`))%>%
   mutate(test_rank = row_number())
 
 cor.test(x = data_for_rank_cor_test$test_rank,

@@ -73,7 +73,7 @@ library(tidyverse)
                 'mean PA correlation' = na.omit(pa_correlation) %>% mean(),
                 'mean PA kappa' = na.omit(pa_kappa) %>% mean(),
                 'mean PA TSS' = na.omit(pa_TSS) %>% mean()) %>%
-    arrange(-`mean PA AUC`)
+    arrange(desc(`median PA AUC`))
 
   Table1[2:ncol(Table1)] <- Table1[2:ncol(Table1)] %>% round(digits = 3)
   
@@ -85,6 +85,7 @@ library(tidyverse)
 ##################################  
 
   # Table 2: as table 1, but limited to small sample sizes only
+
   Table2 <-
   full_output %>%
     filter(model != "CVmaxnet" ) %>%
@@ -101,7 +102,7 @@ library(tidyverse)
               'mean PA correlation' = na.omit(pa_correlation) %>% mean(),
               'mean PA kappa' = na.omit(pa_kappa) %>% mean(),
               'mean PA TSS' = na.omit(pa_TSS) %>% mean()) %>%
-    arrange(-`mean PA AUC`)
+    arrange(-`median PA AUC`)
   
   Table2[2:ncol(Table2)] <- Table2[2:ncol(Table2)] %>% round(digits = 3)
   
