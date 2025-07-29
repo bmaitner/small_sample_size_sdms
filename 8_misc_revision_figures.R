@@ -432,9 +432,14 @@ combined_stats <- combined_stats %>%
                                              na.rm=TRUE)
               
     ) %>%
-    ungroup()%>%
+    ungroup() %>%
     arrange(-median_AUC)
-
+  
+  combined_stats_data_poor_summary <-
+  combined_stats_data_poor_summary %>%
+    mutate(across(where(is.numeric),
+                  ~round(.x,digits = 3)))
+  
   write.csv(x =   combined_stats_data_poor_summary,
             file = "tables/small_sample_size_comparison_to_Valavi_et_al.csv",
             row.names = FALSE)
@@ -470,6 +475,16 @@ combined_stats <- combined_stats %>%
     ungroup() %>%
     arrange(-median_AUC)
   
+  combined_stats_all_spp_summary <-
+    combined_stats_all_spp_summary %>%
+    mutate(across(where(is.numeric),
+                  ~round(.x,digits = 3)))
+  
+  write.csv(x =   combined_stats_all_spp_summary,
+            file = "tables/all_sample_size_comparison_to_Valavi_et_al.csv",
+            row.names = FALSE)
+  
+  
 
 # Ranking by number of "wins"
   
@@ -493,6 +508,32 @@ combined_stats <- combined_stats %>%
     group_by(model)%>%
     summarize(n_wins = n())%>%
     arrange(-n_wins)
+  
+  # How often does one of our models win?
+  
+  combined_stats %>%
+    #filter(model != "maxnet") %>%
+    group_by(spid) %>%
+    arrange(desc(pa_AUC)) %>%
+    slice_head(n = 1) %>%
+    ungroup() %>%
+    group_by(author)%>%
+    summarize(n_wins = n())%>%
+    arrange(-n_wins) #93 times (vs 133).  (88 if you exclude maxnet)
+
+  combined_stats %>%
+    filter(n_presence <= 20)%>%
+    group_by(spid) %>%
+    arrange(desc(pa_AUC)) %>%
+    slice_head(n = 1) %>%
+    ungroup() %>%
+    group_by(author)%>%
+    summarize(n_wins = n())%>%
+    arrange(-n_wins) # 19 times (vs 15)
+    
+  
+  
+  
 
 # Testing which models have different distributions
 
