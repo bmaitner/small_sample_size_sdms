@@ -418,6 +418,7 @@ combined_stats <- combined_stats %>%
     summarise(median_AUC = median(na.omit(pa_AUC)),
               mean_AUC = mean(pa_AUC,na.rm=TRUE),
               median_Corr = median(na.omit(pa_correlation)),
+              mean_Corr = mean(na.omit(pa_correlation)),
               AUC_Q1 = quantile(x = pa_AUC,
                                             probs = 0.25,
                                             na.rm=TRUE),
@@ -458,6 +459,7 @@ combined_stats <- combined_stats %>%
     summarise(median_AUC = median(na.omit(pa_AUC)),
               mean_AUC = mean(pa_AUC,na.rm=TRUE),
               median_Corr = median(na.omit(pa_correlation)),
+              mean_Corr = mean(na.omit(pa_correlation)),
               AUC_Q1 = quantile(x = pa_AUC,
                                     probs = 0.25,
                                     na.rm=TRUE),
@@ -495,7 +497,7 @@ combined_stats <- combined_stats %>%
     arrange(desc(pa_AUC)) %>%
     slice_head(n = 1) %>%
     ungroup() %>%
-    group_by(model)%>%
+    group_by(author,model)%>%
     summarize(n_wins = n())%>%
     arrange(-n_wins)
 
@@ -505,8 +507,10 @@ combined_stats <- combined_stats %>%
     arrange(desc(pa_AUC)) %>%
     slice_head(n = 1) %>%
     ungroup() %>%
-    group_by(model)%>%
+    group_by(author,model)%>%
     summarize(n_wins = n())%>%
+    ungroup()%>%
+    mutate(pct_wins = (n_wins/sum(n_wins))*100)%>%
     arrange(-n_wins)
   
   # How often does one of our models win?
@@ -519,7 +523,9 @@ combined_stats <- combined_stats %>%
     ungroup() %>%
     group_by(author)%>%
     summarize(n_wins = n())%>%
-    arrange(-n_wins) #93 times (vs 133).  (88 if you exclude maxnet)
+    arrange(-n_wins)%>% #93 times (vs 133).  (88 if you exclude maxnet)
+    ungroup() %>%
+    mutate(pct_wins = n_wins/sum(n_wins)*100)
 
   combined_stats %>%
     filter(n_presence <= 20)%>%
@@ -529,8 +535,10 @@ combined_stats <- combined_stats %>%
     ungroup() %>%
     group_by(author)%>%
     summarize(n_wins = n())%>%
-    arrange(-n_wins) # 19 times (vs 15)
-    
+    arrange(-n_wins) %>% # 19 times (vs 15)
+    ungroup() %>%
+    mutate(pct_wins = n_wins/sum(n_wins)*100)
+  
   
   
   
@@ -758,6 +766,18 @@ write.csv(Valavi_comparison_bad_model_small_sample_size,
                            y = Jaccard)) +
       geom_point()
     
+    sensspec_vagreement_jaccard_plot <-
+      sensspec_v_agreement %>%
+      group_by(model_a,model_b)%>%
+      summarise(sens_spec_distance = mean(sens_spec_distance,na.rm=TRUE),
+                Jaccard = mean(Jaccard,na.rm=TRUE))%>%
+      ggplot(mapping = aes(x=sens_spec_distance,
+                           y = Jaccard)) +
+      geom_point()+
+      stat_cor(method = "pearson",label.x = 0.7)+
+      theme_bw()+
+      xlab("Sensitivity/Specificity Distance")+
+      ylab("Jaccard Similarity")
     
     sensspec_vagreement_plot <-
     sensspec_v_agreement %>%
@@ -779,6 +799,24 @@ write.csv(Valavi_comparison_bad_model_small_sample_size,
            height = 5,
            units = "in")
     
-    
+    ggsave(filename = "figures/sensspec_vjaccard_plot.jpeg",
+           plot = sensspec_vagreement_jaccard_plot,
+           dpi = 600,
+           width = 5,
+           height = 5,
+           units = "in")
+
+    combined_agreement_plot <-
+    ggarrange(sensspec_vagreement_plot,
+              sensspec_vagreement_jaccard_plot,
+              ncol = 1,
+              labels = c("A","B"))    
     
 
+    ggsave(filename = "figures/sensspec_v_agreement_and_jaccard_plot.jpeg",
+           plot = combined_agreement_plot,
+           dpi = 600,
+           width = 5,
+           height = 10,
+           units = "in")
+    
