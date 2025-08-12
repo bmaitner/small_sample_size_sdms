@@ -68,7 +68,7 @@ naga <- S4DM::fit_plug_and_play(presence = sample_points_pres$env,
 # make data for plotting
 
 
-pred_data <- data.frame(wc2.1_10m_bio_1 = seq(from=-3,to=3,by=.1))
+pred_data <- data.frame(wc2.1_10m_bio_1 = seq(from=-3,to=3,by=.01))
 
 rbna_pred <- S4DM::project_plug_and_play(pnp_model = rbna,
                                          data = pred_data)
@@ -247,3 +247,162 @@ ggsave(plot = dist_type_plot,
        height = 6,width = 4,units = "in",dpi = 300)
 
 
+##############################################################
+env2d <- rast(system.file('ex/sample_env.tif', package="S4DM"))[[1:2]] %>% scale()
+
+
+# And we'll rescale the variables as well
+plot(env2d)
+
+sample_points_bg2d <- get_env_bg(coords = sample_points[c("longitude","latitude")],
+                               env = env2d,
+                               width = 50000) #note that we used a small set of background points to expedite model fitting
+
+sample_points_pres2d <- get_env_pres(coords = sample_points[c("longitude","latitude")],
+                                   env = env2d)
+
+
+rbna2d <- S4DM::fit_plug_and_play(presence = sample_points_pres2d$env,
+                                background = sample_points_bg2d$env,
+                                presence_method = "rangebagging",
+                                background_method = "none",
+                                d=2)
+
+lbna2d <- S4DM::fit_plug_and_play(presence = sample_points_pres2d$env,
+                                  background = sample_points_bg2d$env,
+                                  presence_method = "lobagoc",
+                                  background_method = "none")
+
+gana2d <- S4DM::fit_plug_and_play(presence = sample_points_pres2d$env,
+                                  background = sample_points_bg2d$env,
+                                  presence_method = "gaussian",
+                                  background_method = "none")
+
+kdna2d <- S4DM::fit_plug_and_play(presence = sample_points_pres2d$env,
+                                  background = sample_points_bg2d$env,
+                                  presence_method = "kde",
+                                  background_method = "none")
+
+
+vina2d <- S4DM::fit_plug_and_play(presence = sample_points_pres2d$env,
+                                  background = sample_points_bg2d$env,
+                                  presence_method = "vine",
+                                  background_method = "none")
+# 
+# mn2d <- S4DM::fit_density_ratio(presence = sample_points_pres2d$env,
+#                                   background = sample_points_bg2d$env,
+#                                 method = "maxnet")
+# 
+# ul2d <- S4DM::fit_density_ratio(presence = sample_points_pres2d$env,
+#                                 background = sample_points_bg2d$env,
+#                                 method = "ulsif")
+# 
+# ru2d <- S4DM::fit_density_ratio(presence = sample_points_pres2d$env,
+#                                 background = sample_points_bg2d$env,
+#                                 method = "rulsif")
+
+
+# Make pred data
+
+  pred_data_temp <- data.frame(temp = seq(from=-4,to=4,by=.01))
+  pred_data_precip <- data.frame(precip = seq(from=-4,to=4,by=.01))
+  combined_preds<- cross_join(pred_data_temp,pred_data_precip)
+  names(combined_preds) <- names(env2d)
+
+# Do predictions  
+    
+  rbna_pred_2d <- S4DM::project_plug_and_play(pnp_model = rbna2d,
+                                           data =combined_preds)
+  
+  lbna_pred_2d <- S4DM::project_plug_and_play(pnp_model = lbna2d,
+                                              data = combined_preds)
+  
+  gana_pred_2d <- S4DM::project_plug_and_play(pnp_model = gana2d,
+                                              data = combined_preds)
+  
+  kdna_pred_2d <- S4DM::project_plug_and_play(pnp_model = kdna2d,
+                                              data = combined_preds)
+  
+  vina_pred_2d <- S4DM::project_plug_and_play(pnp_model = vina2d,
+                                              data = combined_preds)
+  
+  # mn_pred_2d <- S4DM::project_density_ratio(dr_model = mn2d,
+  #                                             data = combined_preds)
+  # 
+  # ru_pred_2d <- S4DM::project_density_ratio(dr_model = ru2d,
+  #                                           data = combined_preds)
+  # 
+  # ul_pred_2d <- S4DM::project_density_ratio(dr_model = ul2d,
+  #                                           data = combined_preds)
+  
+
+
+combined_preds_data <-
+combined_preds %>%
+  bind_cols(data.frame(model="rangebagging",
+                       value = rbna_pred_2d)) %>%
+
+  bind_rows(combined_preds %>%
+              bind_cols(data.frame(model="lobagoc",
+                                   value = lbna_pred_2d))) %>%
+  bind_rows(combined_preds %>%
+              bind_cols(data.frame(model="gaussian",
+                                   value = gana_pred_2d))) %>%
+
+  bind_rows(combined_preds %>%
+              bind_cols(data.frame(model="kde",
+                                   value = kdna_pred_2d))) %>%
+  
+  bind_rows(combined_preds %>%
+              bind_cols(data.frame(model="vine",
+                                   value = vina_pred_2d))) %>%
+  # bind_rows(combined_preds %>%
+  #             bind_cols(data.frame(model="maxnet",
+  #                                  value = mn_pred_2d))) %>%
+  # 
+  # bind_rows(combined_preds %>%
+  #             bind_cols(data.frame(model="rulsif",
+  #                                  value = ru_pred_2d))) %>%
+  # 
+  # bind_rows(combined_preds %>%
+  #             bind_cols(data.frame(model="ulsif",
+  #                                  value = ul_pred_2d))) %>%
+  
+  group_by(model) %>%
+  mutate(model_total = sum(value)) %>%
+  mutate(ror = value / model_total) 
+
+combined_preds_plot <-  
+combined_preds_data %>%
+  mutate(model = factor(model,c("gaussian","kde","vine","rangebagging","lobagoc"))) %>%
+  ggplot(mapping = aes(x=wc2.1_10m_bio_1,
+                       y = wc2.1_10m_bio_12,
+                       fill = ror))+
+  geom_raster()+
+  facet_wrap(~model)+
+  scale_x_continuous(expand = c(0,0),limits = c(-3,3))+
+  scale_y_continuous(expand = c(0,0),limits=c(-1,4))+
+  scale_fill_gradient(low = "white",
+                      high = "blue", 
+                      na.value = 0,
+                      breaks = range(combined_preds_data$ror),
+                      labels = c("Low", "High"))+
+  theme_bw()+
+  labs(fill = "Relative\nOccurrence\nRate")+
+  xlab("Temperature")+
+  ylab("Precipitation")+
+  geom_point(data = sample_points_pres2d$env,
+             mapping = aes(x=wc2.1_10m_bio_1,
+                           y = wc2.1_10m_bio_12),
+             inherit.aes = FALSE,
+             size = .1)
+
+ggsave(plot = combined_preds_plot,
+       filename = "figures/algoritm_example_plot_2d.jpg",
+       width = 5,
+       height = 5,
+       units = "in",
+       dpi = 600)
+
+
+  
