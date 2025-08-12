@@ -1658,7 +1658,7 @@
 <text x='376.29' y='335.25' text-anchor='middle' style='font-size: 8.80px;fill: #4D4D4D; font-family: "Arial";' textLength='9.79px' lengthAdjust='spacingAndGlyphs'>50</text>
 <text x='542.66' y='335.25' text-anchor='middle' style='font-size: 8.80px;fill: #4D4D4D; font-family: "Arial";' textLength='9.79px' lengthAdjust='spacingAndGlyphs'>75</text>
 <text x='709.04' y='335.25' text-anchor='middle' style='font-size: 8.80px;fill: #4D4D4D; font-family: "Arial";' textLength='14.69px' lengthAdjust='spacingAndGlyphs'>100</text>
-<text x='382.94' y='347.72' text-anchor='middle' style='font-size: 11.00px; font-family: "Arial";' textLength='100.90px' lengthAdjust='spacingAndGlyphs'>Occurrence Records</text>
+<text x='382.94' y='347.72' text-anchor='middle' style='font-size: 11.00px; font-family: "Arial";' textLength='155.33px' lengthAdjust='spacingAndGlyphs'>Number of Occurrence Records</text>
 <text transform='translate(17.84,166.99) rotate(-90)' text-anchor='middle' style='font-size: 11.00px; font-family: "Arial";' textLength='165.77px' lengthAdjust='spacingAndGlyphs'>Proportion of Predicted Locations </text>
 <text transform='translate(29.72,166.99) rotate(-90)' text-anchor='middle' style='font-size: 11.00px; font-family: "Arial";' textLength='136.79px' lengthAdjust='spacingAndGlyphs'>with Total Model Consensus</text>
 </g>

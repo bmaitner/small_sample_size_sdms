@@ -671,7 +671,12 @@ write.csv(Valavi_comparison_bad_model_small_sample_size,
           "tables/Valavi_comparison_bad_model_small_sample_size.csv",
           row.names = FALSE)
 
+# presence informaiton
 
+min(presence_counts$n_presence)#2
+median(presence_counts$n_presence)#57
+mean(presence_counts$n_presence)#233
+max(presence_counts$n_presence)#5822
 
 ###################################
 
@@ -819,4 +824,308 @@ write.csv(Valavi_comparison_bad_model_small_sample_size,
            width = 5,
            height = 10,
            units = "in")
+    
+##################################################
+
+    # get counts of predictors used in each dataset    
+    
+    library(disdat)
+
+    regions <- c("AWT", "CAN", "NSW", "NZ", "SA", "SWI")
+    
+    pred_counts <- NULL
+    
+    for (i in 1:length(regions)){
+      
+      
+      region_i <- regions[i]
+      data_i <- disData(region = region_i)
+      
+      message(paste("Starting region ",i, " of ", length(regions),": ",region_i))
+      
+      
+      #Remove categorical predictors  
+      
+      if(region_i == "CAN"){
+        
+        data_i$env <- data_i$env[which(!colnames(data_i$env) %in% c("ontveg"))] 
+        data_i$bg <- data_i$bg[which(!colnames(data_i$bg) %in% c("ontveg"))]
+        data_i$po <- data_i$po[which(!colnames(data_i$po) %in% c("ontveg"))]
+        
+      }
+      
+      if(region_i == "NSW"){
+        data_i$env <- data_i$env[which(!colnames(data_i$env) %in% c("disturb","soilfert","vegsys"))] 
+        data_i$bg <- data_i$bg[which(!colnames(data_i$bg) %in% c("disturb","soilfert","vegsys"))]
+        data_i$po <- data_i$po[which(!colnames(data_i$po) %in% c("disturb","soilfert","vegsys"))]
+      }
+      
+      if(region_i == "NZ"){
+        data_i$env <- data_i$env[which(!colnames(data_i$env) %in% c("age","toxicats"))] 
+        data_i$bg <- data_i$bg[which(!colnames(data_i$bg) %in% c("age","toxicats"))]
+        data_i$po <- data_i$po[which(!colnames(data_i$po) %in% c("age","toxicats"))]
+      }
+      
+      if(region_i == "SWI"){
+        data_i$env <- data_i$env[which(!colnames(data_i$env) %in% c("calc","sfroyy"))] 
+        data_i$bg <- data_i$bg[which(!colnames(data_i$bg) %in% c("calc","sfroyy"))]
+        data_i$po <- data_i$po[which(!colnames(data_i$po) %in% c("calc","sfroyy"))]
+      }
+      
+      pred_counts <- bind_rows(pred_counts,
+                       data.frame(region = region_i,
+                                  n_predictors = data_i$bg %>%
+                                    select(7:ncol(.)) %>%
+                                    ncol()
+                                  )
+                       )
+                       
+    }#end i
+    
+    rm(regions)  
+
+    
+    pred_counts    
+    
+#############################################################    
+# BIEN occurrence accuracy
+    
+  occ_counts <- readRDS("data/manual_downloads/BIEN_occs/occ_counts.RDS")    
+  
+  ssss_counts <- occ_counts %>%
+    filter(n_occs <= 100)
+  
+  
+  library(BIEN)  
+
+    
+    fl_species <- BIEN_list_state(country = "United States",
+                                  state = "Florida")
+    
+    ssss_counts %>%
+      mutate(species = gsub(pattern = "_",
+                            replacement = " ",
+                            x = species)) -> ssss_counts
+    
+    fl_counts <-
+      ssss_counts %>%
+      filter(species %in% fl_species$scrubbed_species_binomial)
+    
+    # Get coords 
+
+    fl_coords  <-BIEN:::.BIEN_sql(query = paste("SELECT latitude,longitude,coordinate_inherent_uncertainty_m
+                       FROM view_full_occurrence_individual
+                       WHERE scrubbed_species_binomial in
+                       (", paste(shQuote(fl_counts$species, type = "sh"), collapse = ", "),")
+                       AND (is_cultivated_observation = 0 OR is_cultivated_observation IS NULL)
+                       AND is_location_cultivated IS NULL
+                       AND (is_introduced=0 OR is_introduced IS NULL)
+                       AND observation_type IN ('plot','specimen','literature','checklist')
+                       AND is_geovalid = 1
+                       AND higher_plant_group NOT IN ('Algae','Bacteria','Fungi')
+                       AND (georef_protocol is NULL OR georef_protocol<>'county centroid')
+                       AND (is_centroid IS NULL OR is_centroid=0)
+                       AND scrubbed_species_binomial IS NOT NULL ;"))
+      
+###########################################################################
+
+library(ggplot2)    
+        
+# Plots vs maxent    
+    
+    ga_vs_mn <-
+      combined_stats %>%
+      select(method,pres_method,species,pa_AUC,n_presence) %>%
+      mutate(small_sample_size = case_when(n_presence <= 20 ~ "yes",
+                                           n_presence > 20 ~ "no"))%>%
+      filter(pres_method %in% "gaussian" |
+               method %in% "maxnet") %>%
+      left_join(x=.,
+                y = dplyr::filter(.data = .,method %in% "maxnet")%>%
+                  rename(method_comp=method,
+                         pa_AUC_comp = pa_AUC)%>%
+                  select(-pres_method,-small_sample_size),by="species",copy = TRUE) %>%
+      filter(method != "maxnet")%>%
+      na.omit()%>%
+      ggplot(mapping = aes(x=pa_AUC_comp,y = pa_AUC,color=small_sample_size))+
+      geom_point(alpha=0.5)+
+      facet_wrap(~method)+
+      xlab("Maxnet P/A AUC")+
+      ylab("Focal P/A AUC")+
+      geom_hline(yintercept = .5,linetype = 2)+
+      geom_vline(xintercept = .5,linetype = 2)+
+      geom_smooth(method = "lm",linewidth = 2)+
+      geom_abline(slope = 1,intercept = 0)+
+      labs(color="Small Sample Size")+
+      theme_bw()
+    
+    kde_vs_mn <-
+      combined_stats %>%
+      select(method,pres_method,species,pa_AUC,n_presence) %>%
+      mutate(small_sample_size = case_when(n_presence <= 20 ~ "yes",
+                                           n_presence > 20 ~ "no"))%>%
+      filter(pres_method %in% "kde" |
+               method %in% "maxnet") %>%
+      left_join(x=.,
+                y = dplyr::filter(.data = .,method %in% "maxnet")%>%
+                  rename(method_comp=method,
+                         pa_AUC_comp = pa_AUC)%>%
+                  select(-pres_method,-small_sample_size),by="species",copy = TRUE) %>%
+      filter(method != "maxnet")%>%
+      na.omit()%>%
+      ggplot(mapping = aes(x=pa_AUC_comp,y = pa_AUC,color=small_sample_size))+
+      geom_point(alpha=0.5)+
+      facet_wrap(~method)+
+      xlab("Maxnet P/A AUC")+
+      ylab("Focal P/A AUC")+
+      geom_hline(yintercept = .5,linetype = 2)+
+      geom_vline(xintercept = .5,linetype = 2)+
+      geom_smooth(method = "lm",linewidth = 2)+
+      geom_abline(slope = 1,intercept = 0)+
+      labs(color="Small Sample Size")+
+      theme_bw()
+    
+    lb_vs_mn <-
+      combined_stats %>%
+      select(method,pres_method,species,pa_AUC,n_presence) %>%
+      mutate(small_sample_size = case_when(n_presence <= 20 ~ "yes",
+                                           n_presence > 20 ~ "no"))%>%
+      filter(pres_method %in% "lobagoc" |
+               method %in% "maxnet") %>%
+      left_join(x=.,
+                y = dplyr::filter(.data = .,method %in% "maxnet")%>%
+                  rename(method_comp=method,
+                         pa_AUC_comp = pa_AUC)%>%
+                  select(-pres_method,-small_sample_size),by="species",copy = TRUE) %>%
+      filter(method != "maxnet")%>%
+      na.omit()%>%
+      ggplot(mapping = aes(x=pa_AUC_comp,y = pa_AUC,color=small_sample_size))+
+      geom_point(alpha=0.5)+
+      facet_wrap(~method)+
+      xlab("Maxnet P/A AUC")+
+      ylab("Focal P/A AUC")+
+      geom_hline(yintercept = .5,linetype = 2)+
+      geom_vline(xintercept = .5,linetype = 2)+
+      geom_smooth(method = "lm",linewidth = 2)+
+      geom_abline(slope = 1,intercept = 0)+
+      labs(color="Small Sample Size")+
+      theme_bw()
+    
+    
+    rb_vs_mn <-
+      combined_stats %>%
+      select(method,pres_method,species,pa_AUC,n_presence) %>%
+      mutate(small_sample_size = case_when(n_presence <= 20 ~ "yes",
+                                           n_presence > 20 ~ "no"))%>%
+      filter(pres_method %in% "rangebagging" |
+               method %in% "maxnet") %>%
+      left_join(x=.,
+                y = dplyr::filter(.data = .,method %in% "maxnet")%>%
+                  rename(method_comp=method,
+                         pa_AUC_comp = pa_AUC)%>%
+                  select(-pres_method,-small_sample_size),by="species",copy = TRUE) %>%
+      filter(method != "maxnet")%>%
+      na.omit()%>%
+      ggplot(mapping = aes(x=pa_AUC_comp,y = pa_AUC,color=small_sample_size))+
+      geom_point(alpha=0.5)+
+      facet_wrap(~method)+
+      xlab("Maxnet P/A AUC")+
+      ylab("Focal P/A AUC")+
+      geom_hline(yintercept = .5,linetype = 2)+
+      geom_vline(xintercept = .5,linetype = 2)+
+      geom_smooth(method = "lm",linewidth = 2)+
+      geom_abline(slope = 1,intercept = 0)+
+      labs(color="Small Sample Size")+
+      theme_bw()
+    
+    
+    vn_vs_mn <-
+      combined_stats %>%
+      select(method,pres_method,species,pa_AUC,n_presence) %>%
+      mutate(small_sample_size = case_when(n_presence <= 20 ~ "yes",
+                                           n_presence > 20 ~ "no"))%>%
+      filter(pres_method %in% "vine" |
+               method %in% "maxnet") %>%
+      left_join(x=.,
+                y = dplyr::filter(.data = .,method %in% "maxnet")%>%
+                  rename(method_comp=method,
+                         pa_AUC_comp = pa_AUC)%>%
+                  select(-pres_method,-small_sample_size),by="species",copy = TRUE) %>%
+      filter(method != "maxnet")%>%
+      na.omit()%>%
+      ggplot(mapping = aes(x=pa_AUC_comp,y = pa_AUC,color=small_sample_size))+
+      geom_point(alpha=0.5)+
+      facet_wrap(~method)+
+      xlab("Maxnet P/A AUC")+
+      ylab("Focal P/A AUC")+
+      geom_hline(yintercept = .5,linetype = 2)+
+      geom_vline(xintercept = .5,linetype = 2)+
+      geom_smooth(method = "lm",linewidth = 2)+
+      geom_abline(slope = 1,intercept = 0)+
+      labs(color="Small Sample Size")+
+      theme_bw()
+    
+    
+    dr_vs_mn <-
+      combined_stats %>%
+      select(method,ratio_method,species,pa_AUC,n_presence) %>%
+      mutate(small_sample_size = case_when(n_presence <= 20 ~ "yes",
+                                           n_presence > 20 ~ "no"))%>%
+      filter(!is.na(ratio_method)) %>%
+      left_join(x=.,
+                y = dplyr::filter(.data = .,method %in% "maxnet")%>%
+                  rename(method_comp=method,
+                         pa_AUC_comp = pa_AUC)%>%
+                  select(-ratio_method,-small_sample_size),by="species",copy = TRUE) %>%
+      filter(method != "maxnet")%>%
+      na.omit()%>%
+      ggplot(mapping = aes(x=pa_AUC_comp,y = pa_AUC,color=small_sample_size))+
+      geom_point(alpha=0.5)+
+      facet_wrap(~method)+
+      xlab("Maxnet P/A AUC")+
+      ylab("Focal P/A AUC")+
+      geom_hline(yintercept = .5,linetype = 2)+
+      geom_vline(xintercept = .5,linetype = 2)+
+      geom_smooth(method = "lm",linewidth = 2)+
+      geom_abline(slope = 1,intercept = 0)+
+      labs(color="Small Sample Size")+
+      theme_bw()
+    
+    ggsave(plot = ga_vs_mn,
+           filename = "figures/maxnet_v_gaussian.jpg",
+           height = 6,width = 8,units = "in",dpi = 300)
+    
+    ggsave(plot = kde_vs_mn,
+           filename = "figures/maxnet_v_kde.jpg",
+           height = 6,width = 8,units = "in",dpi = 300)
+    
+    ggsave(plot = lb_vs_mn,
+           filename = "figures/maxnet_v_lobagoc.jpg",
+           height = 6,width = 8,units = "in",dpi = 300)
+    
+    ggsave(plot = rb_vs_mn,
+           filename = "figures/maxnet_v_rangebagging.jpg",
+           height = 6,width = 8,units = "in",dpi = 300)
+    
+    ggsave(plot = vn_vs_mn,
+           filename = "figures/maxnet_v_vine.jpg",
+           height = 6,width = 8,units = "in",dpi = 300)
+    
+    ggsave(plot = dr_vs_mn,
+           filename = "figures/maxnet_v_density_ratio.jpg",
+           height = 6,width = 8,units = "in",dpi = 300)
+    
+##############################################
+    
+  # Distribution of occurrence records for small sample size species in Elith dataset  
+    
+    combined_stats %>%
+        filter(method=="maxnet")%>%
+        filter(n_presence < 20) %>%
+        pull(n_presence) %>% hist(breaks = 20) 
+    
+###############################################
+    
+    
+  # Distribution example figures    
     

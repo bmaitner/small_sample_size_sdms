@@ -75,11 +75,13 @@ full_output %>%full_join(mean_fold_output,
 #########
 
 #How many species have 20 or fewer occurrences?
-combined_output %>%
-  dplyr::select(species,n_presence)%>%
-  na.omit()%>%
-  unique()%>%
-  dplyr::filter(n_presence <= 20)
+
+  combined_output %>%
+    dplyr::select(species,n_presence)%>%
+    na.omit()%>%
+    unique()%>%
+    dplyr::filter(n_presence <= 20) %>%
+    nrow()
 
 
 combined_output %>%
@@ -305,6 +307,91 @@ ggsave(filename = "figures/training_vs_pa_metric_correlations.jpeg",
        units = "in")
 
 
+# as above, but for all sample sizes
+    
+    combined_output %>%
+      group_by(model) %>%
+      #filter(!all(is.na(pa_AUC))) %>%
+      dplyr::select(model,full_AUC,pa_AUC)%>%
+      mutate(metric = "AUC")%>%
+      rename(full_value = full_AUC,
+             pa_value = pa_AUC)%>%
+      
+      bind_rows(
+        combined_output %>%
+          group_by(model) %>%
+          #filter(!all(is.na(pa_AUC))) %>%
+          dplyr::select(model,full_sensitivity,pa_sensitivity)%>%
+          mutate(metric = "sensitivity")%>%
+          rename(full_value = full_sensitivity,
+                 pa_value = pa_sensitivity))%>%
+      
+      bind_rows(
+        combined_output %>%
+          group_by(model) %>%
+          #filter(!all(is.na(pa_AUC))) %>%
+          dplyr::select(model,full_specificity,pa_specificity)%>%
+          mutate(metric = "specificity")%>%
+          rename(full_value = full_specificity,
+                 pa_value = pa_specificity))%>%
+      
+      bind_rows(
+        combined_output %>%
+          group_by(model) %>%
+          #filter(!all(is.na(pa_AUC))) %>%
+          dplyr::select(model,full_prediction_accuracy,pa_prediction_accuracy)%>%
+          mutate(metric = "prediction_accuracy")%>%
+          rename(full_value = full_prediction_accuracy,
+                 pa_value = pa_prediction_accuracy))%>%
+      bind_rows(
+        combined_output %>%
+          group_by(model) %>%
+          #filter(!all(is.na(pa_AUC))) %>%
+          dplyr::select(model,full_kappa,pa_kappa)%>%
+          mutate(metric = "kappa")%>%
+          rename(full_value = full_kappa,
+                 pa_value = pa_kappa)) %>%
+      bind_rows(
+        combined_output %>%
+          group_by(model) %>%
+          #filter(!all(is.na(pa_AUC))) %>%
+          dplyr::select(model,full_correlation,pa_correlation)%>%
+          mutate(metric = "correlation")%>%
+          rename(full_value = full_correlation,
+                 pa_value = pa_correlation))%>%
+      bind_rows(
+        combined_output %>%
+          mutate(pa_TSS = pa_sensitivity + pa_specificity - 1,
+                 full_TSS = full_sensitivity + full_specificity - 1) %>%
+          group_by(model) %>%
+          #filter(!all(is.na(pa_AUC))) %>%
+          dplyr::select(model,full_TSS,pa_TSS)%>%
+          mutate(metric = "TSS")%>%
+          rename(full_value = full_TSS,
+                 pa_value = pa_TSS)) -> metric_corr_data_all_spp
+    
+    
+    correlations_training_vs_pa_all_spp <-
+      metric_corr_data_all_spp %>%
+      ggplot(mapping = aes(x = full_value,
+                           y = pa_value))+
+      geom_point(aes(color = model))+
+      stat_cor(method = "pearson",)+
+      geom_abline(slope = 1,intercept = 0)+
+      facet_wrap(~metric,ncol=2,scale="free")+
+      theme_bw()+
+      xlab("Value (Training Data)")+
+      ylab("Value (P/A Data)")
+    
+    ggsave(filename = "figures/training_vs_pa_metric_correlations_all_sample_sizes.jpeg",
+           plot = correlations_training_vs_pa_all_spp,
+           dpi = 600,
+           width = 10,
+           height = 5,
+           units = "in")
+    
+
+
 ###################################################
 
 # Testing v pa correlations
@@ -342,10 +429,3 @@ cor.test(x = data_for_rank_cor_test$test_rank,
 
 nrow(data_for_rank_cor_test %>%
   filter(test_rank == 1 & pa_rank == 1))/length(unique(data_for_rank_cor_test$species))*100
-
-
-
-
-
-
-

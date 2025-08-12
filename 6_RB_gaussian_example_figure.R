@@ -146,3 +146,104 @@ ggsave(filename = "figures/example_rb_gaussian.jpeg",
 ggsave(filename = "figures/example_rb_gaussian.png",
        plot = example_plot,
        width = 5,height = 5,units = "in",dpi = 600)
+
+######################################################
+
+# Figure for revision with different model types
+
+
+rbna <- S4DM::fit_plug_and_play(presence = sample_points_pres$env,
+                                background = sample_points_bg$env,
+                                presence_method = "rangebagging",
+                                background_method = "none",
+                                d=1)
+
+kdena <- S4DM::fit_plug_and_play(presence = sample_points_pres$env,
+                                background = sample_points_bg$env,
+                                presence_method = "kde",
+                                background_method = "none",
+                                d=1)
+
+gana <- S4DM::fit_plug_and_play(presence = sample_points_pres$env,
+                                background = sample_points_bg$env,
+                                presence_method = "gaussian",
+                                background_method = "none")
+
+vina <- S4DM::fit_plug_and_play(presence = sample_points_pres$env,
+                                background = sample_points_bg$env,
+                                presence_method = "vine",
+                                background_method = "none")
+
+lbna <- S4DM::fit_plug_and_play(presence = sample_points_pres$env,
+                                background = sample_points_bg$env,
+                                presence_method = "lobagoc",
+                                background_method = "none")
+
+
+
+rbna_pred <- S4DM::project_plug_and_play(pnp_model = rbna,
+                                         data = pred_data)
+
+gana_pred <- S4DM::project_plug_and_play(pnp_model = gana,
+                                         data = pred_data)
+
+
+kdena_pred <- S4DM::project_plug_and_play(pnp_model = kdena,
+                                         data = pred_data)
+
+
+lbna_pred <- S4DM::project_plug_and_play(pnp_model = lbna,
+                                          data = pred_data)
+
+vina_pred <- S4DM::project_plug_and_play(pnp_model = vina,
+                                          data = pred_data)
+
+
+dist_type_plot_data <-
+  bind_rows(
+    data.frame(model = "rangebagging",
+               env = pred_data,
+               value= rbna_pred),
+    
+    data.frame(model = "gaussian",
+               env = pred_data,
+               value = gana_pred),
+    
+    data.frame(model = "kde",
+               env = pred_data,
+               value = kdena_pred),
+    
+    data.frame(model = "vine",
+               env = pred_data,
+               value= vina_pred),
+    
+    data.frame(model = "lobagoc",
+               env = pred_data,
+               value= lbna_pred)
+    
+    
+    
+  )%>%
+  rename(env = wc2.1_10m_bio_1)
+
+dist_type_plot_data <- dist_type_plot_data %>%
+  group_by(model)%>%
+  mutate(total_pred = sum(value))%>%
+  mutate(ror = value/total_pred)
+
+
+dist_type_plot <-
+dist_type_plot_data %>%
+  ggplot(mapping = aes(x=env,y = ror))+
+  geom_line()+
+  facet_wrap(~model,ncol=1)+
+  theme_bw()+
+  ylab("Relative Occurrence Rate")+
+  xlab("Environmental Value")+
+  scale_x_continuous(expand = c(0,0))
+
+ggsave(plot = dist_type_plot,
+       filename = "figures/algorithm_example_plot.jpg",
+       height = 6,width = 4,units = "in",dpi = 300)
+
+

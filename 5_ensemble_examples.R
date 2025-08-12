@@ -290,7 +290,7 @@ if(!file.exists("outputs/ensemble_profile_100.RDS")){
                                 fill=Support),
                   alpha=0.3,
                   inherit.aes = FALSE)+
-    xlab("Occurrence Records")+
+    xlab("Number of Occurrence Records")+
     #ylab("Proportion of Predicted Locations")+
     ylab("Proportion of Predicted Locations \nwith Total Model Consensus")+
     theme_bw()+
