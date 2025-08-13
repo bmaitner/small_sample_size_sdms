@@ -912,20 +912,46 @@ max(presence_counts$n_presence)#5822
       filter(species %in% fl_species$scrubbed_species_binomial)
     
     # Get coords 
+    
+    fl_occs <- BIEN:::.BIEN_sql(query = "SELECT scrubbed_species_binomial,
+                     latitude,
+                     longitude,
+                     coord_uncertainty_m,
+                     coordinate_inherent_uncertainty_m
+                     FROM view_full_occurrence_individual
+                     WHERE country in ( 'United States' )
+                     AND state_province in ( 'Florida' )
+                     AND scrubbed_species_binomial IS NOT NULL
+                     AND (is_cultivated_observation = 0 OR is_cultivated_observation IS NULL)
+                     AND is_location_cultivated IS NULL
+                     AND (is_introduced=0 OR is_introduced IS NULL)
+                     AND higher_plant_group NOT IN ('Algae','Bacteria','Fungi')
+                     AND is_geovalid = 1
+                     AND (georef_protocol is NULL OR georef_protocol<>'county centroid')
+                     AND (is_centroid IS NULL OR is_centroid=0)
+                     AND observation_type IN ('plot','specimen','literature','checklist')
+                     AND scrubbed_species_binomial IS NOT NULL ;",
+                     fetch.query = FALSE)
+    
+    fl_occs <- fl_occs %>%
+      filter(scrubbed_species_binomial %in% fl_counts$species)
+    
+    
+    fl_occs %>%
+      summarise(mean_coord_uncertainty_m = mean(coord_uncertainty_m,na.rm=TRUE),
+                mean_inherent_uncertainty_m = mean(coordinate_inherent_uncertainty_m,na.rm=TRUE),
+                median_coord_uncertainty_m = median(coord_uncertainty_m,na.rm=TRUE),
+                median_inherent_uncertainty_m = median(coordinate_inherent_uncertainty_m,na.rm=TRUE))
+    
+    # mean_coord_uncertainty_m mean_inherent_uncertainty_m median_coord_uncertainty_m
+    #                  5861.967                    1010.975                        651
+    # median_inherent_uncertainty_m
+    #                      0.9767545 
+    
+    
 
-    fl_coords  <-BIEN:::.BIEN_sql(query = paste("SELECT latitude,longitude,coordinate_inherent_uncertainty_m
-                       FROM view_full_occurrence_individual
-                       WHERE scrubbed_species_binomial in
-                       (", paste(shQuote(fl_counts$species, type = "sh"), collapse = ", "),")
-                       AND (is_cultivated_observation = 0 OR is_cultivated_observation IS NULL)
-                       AND is_location_cultivated IS NULL
-                       AND (is_introduced=0 OR is_introduced IS NULL)
-                       AND observation_type IN ('plot','specimen','literature','checklist')
-                       AND is_geovalid = 1
-                       AND higher_plant_group NOT IN ('Algae','Bacteria','Fungi')
-                       AND (georef_protocol is NULL OR georef_protocol<>'county centroid')
-                       AND (is_centroid IS NULL OR is_centroid=0)
-                       AND scrubbed_species_binomial IS NOT NULL ;"))
+    
+    
       
 ###########################################################################
 
