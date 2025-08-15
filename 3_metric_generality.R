@@ -307,6 +307,8 @@ ggsave(filename = "figures/training_vs_pa_metric_correlations.jpeg",
        units = "in")
 
 
+
+
 # as above, but for all sample sizes
     
     combined_output %>%
@@ -429,3 +431,190 @@ cor.test(x = data_for_rank_cor_test$test_rank,
 
 nrow(data_for_rank_cor_test %>%
   filter(test_rank == 1 & pa_rank == 1))/length(unique(data_for_rank_cor_test$species))*100
+
+
+#####################################
+
+#correlations between PA AUC and mean testing AUC
+
+combined_output %>%
+  filter(n_presence <= 20) %>%
+  group_by(model) %>%
+  #filter(!all(is.na(pa_AUC))) %>%
+  dplyr::select(model,`mean testing_AUC`,pa_AUC)%>%
+  mutate(metric = "AUC")%>%
+  rename(test_value = `mean testing_AUC`,
+         pa_value = pa_AUC)%>%
+  
+  bind_rows(
+    combined_output %>%
+      filter(n_presence <= 20) %>%
+      group_by(model) %>%
+      #filter(!all(is.na(pa_AUC))) %>%
+      dplyr::select(model,`mean testing_AUC`,pa_sensitivity)%>%
+      mutate(metric = "sensitivity")%>%
+      rename(test_value = `mean testing_AUC`,
+             pa_value = pa_sensitivity))%>%
+  
+  bind_rows(
+    combined_output %>%
+      filter(n_presence <= 20) %>%
+      group_by(model) %>%
+      #filter(!all(is.na(pa_AUC))) %>%
+      dplyr::select(model,`mean testing_specificity`,pa_specificity)%>%
+      mutate(metric = "specificity")%>%
+      rename(test_value = `mean testing_specificity`,
+             pa_value = pa_specificity))%>%
+  
+  bind_rows(
+    combined_output %>%
+      filter(n_presence <= 20) %>%
+      group_by(model) %>%
+      #filter(!all(is.na(pa_AUC))) %>%
+      dplyr::select(model,`mean testing_prediction_accuracy`,pa_prediction_accuracy)%>%
+      mutate(metric = "prediction_accuracy")%>%
+      rename(test_value = `mean testing_prediction_accuracy`,
+             pa_value = pa_prediction_accuracy))%>%
+  bind_rows(
+    combined_output %>%
+      filter(n_presence <= 20) %>%
+      group_by(model) %>%
+      #filter(!all(is.na(pa_AUC))) %>%
+      dplyr::select(model,`mean testing_kappa`,pa_kappa)%>%
+      mutate(metric = "kappa")%>%
+      rename(test_value = `mean testing_kappa`,
+             pa_value = pa_kappa)) %>%
+  bind_rows(
+    combined_output %>%
+      filter(n_presence <= 20) %>%
+      group_by(model) %>%
+      #filter(!all(is.na(pa_AUC))) %>%
+      dplyr::select(model,`mean testing_correlation`,pa_correlation)%>%
+      mutate(metric = "correlation")%>%
+      rename(test_value = `mean testing_correlation`,
+             pa_value = pa_correlation))%>%
+  bind_rows(
+    combined_output %>%
+      filter(n_presence <= 20) %>%
+      mutate(pa_TSS = pa_sensitivity + pa_specificity - 1,
+             test_TSS = `mean testing_sensitivity` + `mean testing_specificity` - 1) %>%
+      group_by(model) %>%
+      #filter(!all(is.na(pa_AUC))) %>%
+      dplyr::select(model,test_TSS,pa_TSS)%>%
+      mutate(metric = "TSS")%>%
+      rename(test_value = test_TSS,
+             pa_value = pa_TSS)) -> metric_corr_data_cv_test
+
+
+# Plot of correlations
+correlations_testing_vs_pa <-
+  metric_corr_data_cv_test %>%
+  ggplot(mapping = aes(x = test_value,
+                       y = pa_value))+
+  geom_point(aes(color = model))+
+  stat_cor(method = "pearson",)+
+  geom_abline(slope = 1,intercept = 0)+
+  facet_wrap(~metric,ncol=2,scale="free")+
+  theme_bw()+
+  xlab("Value (Testing Data)")+
+  ylab("Value (P/A Data)")
+
+ggsave(filename = "figures/testing_vs_pa_metric_correlations.jpeg",
+       plot = correlations_testing_vs_pa,
+       dpi = 600,
+       width = 10,
+       height = 5,
+       units = "in")
+
+
+combined_output %>%
+  #filter(n_presence <= 20) %>%
+  group_by(model) %>%
+  #filter(!all(is.na(pa_AUC))) %>%
+  dplyr::select(model,`mean testing_AUC`,pa_AUC)%>%
+  mutate(metric = "AUC")%>%
+  rename(test_value = `mean testing_AUC`,
+         pa_value = pa_AUC)%>%
+  
+  bind_rows(
+    combined_output %>%
+      #filter(n_presence <= 20) %>%
+      group_by(model) %>%
+      #filter(!all(is.na(pa_AUC))) %>%
+      dplyr::select(model,`mean testing_AUC`,pa_sensitivity)%>%
+      mutate(metric = "sensitivity")%>%
+      rename(test_value = `mean testing_AUC`,
+             pa_value = pa_sensitivity))%>%
+  
+  bind_rows(
+    combined_output %>%
+      #filter(n_presence <= 20) %>%
+      group_by(model) %>%
+      #filter(!all(is.na(pa_AUC))) %>%
+      dplyr::select(model,`mean testing_specificity`,pa_specificity)%>%
+      mutate(metric = "specificity")%>%
+      rename(test_value = `mean testing_specificity`,
+             pa_value = pa_specificity))%>%
+  
+  bind_rows(
+    combined_output %>%
+     # filter(n_presence <= 20) %>%
+      group_by(model) %>%
+      #filter(!all(is.na(pa_AUC))) %>%
+      dplyr::select(model,`mean testing_prediction_accuracy`,pa_prediction_accuracy)%>%
+      mutate(metric = "prediction_accuracy")%>%
+      rename(test_value = `mean testing_prediction_accuracy`,
+             pa_value = pa_prediction_accuracy))%>%
+  bind_rows(
+    combined_output %>%
+      #filter(n_presence <= 20) %>%
+      group_by(model) %>%
+      #filter(!all(is.na(pa_AUC))) %>%
+      dplyr::select(model,`mean testing_kappa`,pa_kappa)%>%
+      mutate(metric = "kappa")%>%
+      rename(test_value = `mean testing_kappa`,
+             pa_value = pa_kappa)) %>%
+  bind_rows(
+    combined_output %>%
+     # filter(n_presence <= 20) %>%
+      group_by(model) %>%
+      #filter(!all(is.na(pa_AUC))) %>%
+      dplyr::select(model,`mean testing_correlation`,pa_correlation)%>%
+      mutate(metric = "correlation")%>%
+      rename(test_value = `mean testing_correlation`,
+             pa_value = pa_correlation))%>%
+  bind_rows(
+    combined_output %>%
+     # filter(n_presence <= 20) %>%
+      mutate(pa_TSS = pa_sensitivity + pa_specificity - 1,
+             test_TSS = `mean testing_sensitivity` + `mean testing_specificity` - 1) %>%
+      group_by(model) %>%
+      #filter(!all(is.na(pa_AUC))) %>%
+      dplyr::select(model,test_TSS,pa_TSS)%>%
+      mutate(metric = "TSS")%>%
+      rename(test_value = test_TSS,
+             pa_value = pa_TSS)) -> metric_corr_data_cv_test_all_spp
+
+
+correlations_testing_vs_pa_all_spp <-
+  metric_corr_data_cv_test_all_spp %>%
+  ggplot(mapping = aes(x = test_value,
+                       y = pa_value))+
+  geom_point(aes(color = model))+
+  stat_cor(method = "pearson",)+
+  geom_abline(slope = 1,intercept = 0)+
+  facet_wrap(~metric,ncol=2,scale="free")+
+  theme_bw()+
+  xlab("Value (Testing Data)")+
+  ylab("Value (P/A Data)")
+
+ggsave(filename = "figures/testing_vs_pa_metric_correlations_all_sample_sizes.jpeg",
+       plot = correlations_testing_vs_pa_all_spp,
+       dpi = 600,
+       width = 10,
+       height = 5,
+       units = "in")
+
+####################################
+
+
