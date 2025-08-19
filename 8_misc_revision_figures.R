@@ -1152,6 +1152,66 @@ library(ggplot2)
     
 ###############################################
     
+  # AUC mean vs variance (after https://onlinelibrary.wiley.com/doi/10.1111/j.1472-4642.2008.00482.x )
     
-  # Distribution example figures    
+library(ggrepel)    
+
     
+small_sample_size_med_v_var <-        
+combined_stats %>%
+      filter(n_presence <= 20) %>%
+      mutate(model_group = case_when(!is.na(pres_method) ~ pres_method,
+                                     is.na(pres_method) ~ ratio_method))%>%
+      group_by(method,model_group) %>%
+      summarise(median_pa_auc = median(pa_AUC,na.rm = TRUE),
+                variance_pa_auc = var(pa_AUC,na.rm = TRUE)) %>%
+      ggplot(mapping = aes(x=median_pa_auc,y=variance_pa_auc,color=model_group))+
+      geom_point()+
+  geom_text_repel(aes(label = method),
+                  min.segment.length = .1,
+                  show.legend = FALSE,
+                  max.overlaps=100)+
+  theme_bw()+
+  labs(color = "Algorithm Group")+
+  xlab("Median P/A AUC")+
+  ylab("Variance P/A AUC")
+  #+scale_x_continuous(expand = c(0.1,0.1)) +
+  #scale_y_continuous(expand = c(0.005,0.005))
+
+ggsave(plot = small_sample_size_med_v_var,
+       filename = "figures/auc_med_v_var_small_sample_size.jpg",
+       width = 12,
+       height = 10,
+       units = "in",
+       dpi = 300)
+
+
+all_sample_size_med_v_var <-        
+  combined_stats %>%
+#  filter(n_presence <= 20) %>%
+  mutate(model_group = case_when(!is.na(pres_method) ~ pres_method,
+                                 is.na(pres_method) ~ ratio_method))%>%
+  group_by(method,model_group) %>%
+  summarise(median_pa_auc = median(pa_AUC,na.rm = TRUE),
+            variance_pa_auc = var(pa_AUC,na.rm = TRUE)) %>%
+  ggplot(mapping = aes(x=median_pa_auc,y=variance_pa_auc,color=model_group))+
+  geom_point()+
+  geom_text_repel(aes(label = method),
+                  min.segment.length = .1,
+                  show.legend = FALSE,
+                  max.overlaps=100)+
+  theme_bw()+
+  labs(color = "Algorithm Group")+
+  xlab("Median P/A AUC")+
+  ylab("Variance P/A AUC")
+#+scale_x_continuous(expand = c(0.1,0.1)) +
+#scale_y_continuous(expand = c(0.005,0.005))
+
+
+ggsave(plot = all_sample_size_med_v_var,
+       filename = "figures/auc_med_v_var_all_sample_size.jpg",
+       width = 12,
+       height = 10,
+       units = "in",
+       dpi = 300)
+
