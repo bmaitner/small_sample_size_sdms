@@ -56,26 +56,47 @@ library(tidyverse)
   # Generate result summaries
   
   
-  # Table 1: performance ranked with Presence/Abscence data
+  # Table 1: performance ranked with Presence/Absence data
   
     Table1 <-
     full_output %>%
-      filter(model != "CVmaxnet" ) %>%
-      mutate(pa_TSS = pa_sensitivity + pa_specificity - 1) %>%
-      group_by(model) %>%
-      summarise('median PA AUC' = na.omit(pa_AUC) %>% median(),
-                'mean PA AUC' = na.omit(pa_AUC) %>% mean(),
-                'mean PA sensitivity' = na.omit(pa_sensitivity) %>% mean(),
-                'mean PA specificity' = na.omit(pa_specificity) %>% mean(),
-                'mean PA pAUC (sensitivity 0.8 - 1)' = na.omit(pa_pAUC_sensitivity) %>% mean(),
-                'mean PA pAUC (specificity 0.8 -1)' = na.omit(pa_pAUC_specificity) %>% mean(),
-                'mean PA prediction accuracy' = na.omit(pa_prediction_accuracy) %>% mean(),
-                'mean PA correlation' = na.omit(pa_correlation) %>% mean(),
-                'mean PA kappa' = na.omit(pa_kappa) %>% mean(),
-                'mean PA TSS' = na.omit(pa_TSS) %>% mean()) %>%
-    arrange(desc(`median PA AUC`))
-
-  Table1[2:ncol(Table1)] <- Table1[2:ncol(Table1)] %>% round(digits = 3)
+    filter(model != "CVmaxnet" ) %>%
+    mutate(pa_TSS = pa_sensitivity + pa_specificity - 1) %>%
+    group_by(model) %>%
+    summarise('median PA AUC' = na.omit(pa_AUC) %>% median(),
+              'mean PA AUC' = na.omit(pa_AUC) %>% mean(),
+              'mean PA sensitivity' = na.omit(pa_sensitivity) %>% mean(),
+              'mean PA specificity' = na.omit(pa_specificity) %>% mean(),
+              'mean PA pAUC (sensitivity 0.8 - 1)' = na.omit(pa_pAUC_sensitivity) %>% mean(),
+              'mean PA pAUC (specificity 0.8 -1)' = na.omit(pa_pAUC_specificity) %>% mean(),
+              'mean PA prediction accuracy' = na.omit(pa_prediction_accuracy) %>% mean(),
+              'mean PA correlation' = na.omit(pa_correlation) %>% mean(),
+              'mean PA kappa' = na.omit(pa_kappa) %>% mean(),
+              'mean PA TSS' = na.omit(pa_TSS) %>% mean(),
+              
+              'SD PA AUC' = na.omit(pa_AUC) %>% sd(),
+              'SD PA sensitivity' = na.omit(pa_sensitivity) %>% sd(),
+              'SD PA specificity' = na.omit(pa_specificity) %>% sd(),
+              'SD PA pAUC (sensitivity 0.8 - 1)' = na.omit(pa_pAUC_sensitivity) %>% sd(),
+              'SD PA pAUC (specificity 0.8 -1)' = na.omit(pa_pAUC_specificity) %>% sd(),
+              'SD PA prediction accuracy' = na.omit(pa_prediction_accuracy) %>% sd(),
+              'SD PA correlation' = na.omit(pa_correlation) %>% sd(),
+              'SD PA kappa' = na.omit(pa_kappa) %>% sd(),
+              'SD PA TSS' = na.omit(pa_TSS) %>% sd()) %>%
+    arrange(desc(`median PA AUC`)) %>%
+    mutate(across(`median PA AUC`:`SD PA TSS`, ~round(.x,digits = 3)))%>%
+    pivot_longer(
+      cols = matches("^(mean|SD) "),
+      names_to = c(".value", "var"),
+      names_pattern = "(mean|SD) (.*)"
+    ) %>%
+    mutate(mean = sprintf("%s (%s)", mean, SD)) %>%
+    select(-SD) %>%
+    pivot_wider(
+      names_from = var,
+      values_from = mean,
+      names_prefix = "mean "
+    )
   
   Table1 %>%
   write.csv(file = "tables/Table1.csv",
@@ -88,8 +109,8 @@ library(tidyverse)
 
   Table2 <-
   full_output %>%
-    filter(model != "CVmaxnet" ) %>%
     filter(n_presence <= 20) %>%
+    filter(model != "CVmaxnet" ) %>%
     mutate(pa_TSS = pa_sensitivity + pa_specificity - 1) %>%
     group_by(model) %>%
     summarise('median PA AUC' = na.omit(pa_AUC) %>% median(),
@@ -101,11 +122,33 @@ library(tidyverse)
               'mean PA prediction accuracy' = na.omit(pa_prediction_accuracy) %>% mean(),
               'mean PA correlation' = na.omit(pa_correlation) %>% mean(),
               'mean PA kappa' = na.omit(pa_kappa) %>% mean(),
-              'mean PA TSS' = na.omit(pa_TSS) %>% mean()) %>%
-    arrange(-`median PA AUC`)
+              'mean PA TSS' = na.omit(pa_TSS) %>% mean(),
+              
+              'SD PA AUC' = na.omit(pa_AUC) %>% sd(),
+              'SD PA sensitivity' = na.omit(pa_sensitivity) %>% sd(),
+              'SD PA specificity' = na.omit(pa_specificity) %>% sd(),
+              'SD PA pAUC (sensitivity 0.8 - 1)' = na.omit(pa_pAUC_sensitivity) %>% sd(),
+              'SD PA pAUC (specificity 0.8 -1)' = na.omit(pa_pAUC_specificity) %>% sd(),
+              'SD PA prediction accuracy' = na.omit(pa_prediction_accuracy) %>% sd(),
+              'SD PA correlation' = na.omit(pa_correlation) %>% sd(),
+              'SD PA kappa' = na.omit(pa_kappa) %>% sd(),
+              'SD PA TSS' = na.omit(pa_TSS) %>% sd()) %>%
+    arrange(desc(`median PA AUC`)) %>%
+    mutate(across(`median PA AUC`:`SD PA TSS`, ~round(.x,digits = 3)))%>%
+    pivot_longer(
+      cols = matches("^(mean|SD) "),
+      names_to = c(".value", "var"),
+      names_pattern = "(mean|SD) (.*)"
+    ) %>%
+    mutate(mean = sprintf("%s (%s)", mean, SD)) %>%
+    select(-SD) %>%
+    pivot_wider(
+      names_from = var,
+      values_from = mean,
+      names_prefix = "mean "
+    )
   
-  Table2[2:ncol(Table2)] <- Table2[2:ncol(Table2)] %>% round(digits = 3)
-  
+
   Table2 %>%
     write.csv(file = "tables/Table2.csv",
               row.names = FALSE)

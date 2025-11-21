@@ -403,9 +403,62 @@ combined_stats <- combined_stats %>%
 
 # Ranking by AUC
 
-  combined_stats_data_poor_summary <-
+combined_stats_data_poor_summary <-
   combined_stats %>%
-    filter(n_presence <= 20)%>%
+  filter(n_presence <= 20)%>%
+  #mutate(model = gsub(pattern = " / none",replacement = "",x=model))%>%
+  mutate(model = gsub(pattern = "maxnet",replacement = "Maxnet",x=model))%>%
+  mutate(model = gsub(pattern = "vine",replacement = "Vine",x=model))%>%
+  mutate(model = gsub(pattern = "gaussian",replacement = "Gaussian",x=model))%>%
+  mutate(model = gsub(pattern = "kde",replacement = "KDE",x=model))%>%
+  mutate(model = gsub(pattern = "rangebagging",replacement = "Range-Bagging",x=model))%>%
+  mutate(model = gsub(pattern = "ulsif",replacement = "uLSIF",x=model))%>%
+  mutate(model = gsub(pattern = "lobagoc",replacement = "LOBAG-OC",x=model))%>%
+  group_by(author,model)%>%
+  summarise(median_AUC = median(na.omit(pa_AUC)),
+            mean_AUC = mean(pa_AUC,na.rm=TRUE),
+            SD_AUC = sd(pa_AUC,na.rm=TRUE),
+            median_Corr = median(na.omit(pa_correlation)),
+            mean_Corr = mean(na.omit(pa_correlation)),
+            SD_Corr = sd(na.omit(pa_correlation)),
+            AUC_Q1 = quantile(x = pa_AUC,
+                              probs = 0.25,
+                              na.rm=TRUE),
+            AUC_Q3 = quantile(x = pa_AUC,
+                              probs = 0.75,
+                              na.rm=TRUE),
+            correlation_Q1 = quantile(x = pa_correlation,
+                                      probs = 0.25,
+                                      na.rm=TRUE),
+            correlation_Q3 = quantile(x = pa_correlation,
+                                      probs = 0.75,
+                                      na.rm=TRUE)
+            
+  ) %>%
+  ungroup() %>%
+  arrange(-median_AUC) |>
+  mutate(across(median_AUC:correlation_Q3, ~round(.x,digits = 3))) |>
+  pivot_longer(
+    cols = matches("^(mean|SD)_"),
+    names_to = c(".value", "var"),
+    names_pattern = "(mean|SD)_(.*)"
+  ) %>%
+  mutate(mean = sprintf("%s (%s)", mean, SD)) %>%
+  select(-SD) %>%
+  pivot_wider(
+    names_from = var,
+    values_from = mean,
+    names_prefix = "mean "
+  )|>
+  relocate(author,model,median_AUC,`mean AUC`,`mean Corr`)
+
+  write.csv(x =   combined_stats_data_poor_summary,
+            file = "tables/small_sample_size_comparison_to_Valavi_et_al.csv",
+            row.names = FALSE)
+
+
+  combined_stats_all_spp_summary <-
+    combined_stats %>%
     #mutate(model = gsub(pattern = " / none",replacement = "",x=model))%>%
     mutate(model = gsub(pattern = "maxnet",replacement = "Maxnet",x=model))%>%
     mutate(model = gsub(pattern = "vine",replacement = "Vine",x=model))%>%
@@ -417,70 +470,40 @@ combined_stats <- combined_stats %>%
     group_by(author,model)%>%
     summarise(median_AUC = median(na.omit(pa_AUC)),
               mean_AUC = mean(pa_AUC,na.rm=TRUE),
+              SD_AUC = sd(pa_AUC,na.rm=TRUE),
               median_Corr = median(na.omit(pa_correlation)),
               mean_Corr = mean(na.omit(pa_correlation)),
+              SD_Corr = sd(na.omit(pa_correlation)),
               AUC_Q1 = quantile(x = pa_AUC,
-                                            probs = 0.25,
-                                            na.rm=TRUE),
+                                probs = 0.25,
+                                na.rm=TRUE),
               AUC_Q3 = quantile(x = pa_AUC,
-                                             probs = 0.75,
-                                             na.rm=TRUE),
+                                probs = 0.75,
+                                na.rm=TRUE),
               correlation_Q1 = quantile(x = pa_correlation,
-                                            probs = 0.25,
-                                            na.rm=TRUE),
+                                        probs = 0.25,
+                                        na.rm=TRUE),
               correlation_Q3 = quantile(x = pa_correlation,
-                                             probs = 0.75,
-                                             na.rm=TRUE)
+                                        probs = 0.75,
+                                        na.rm=TRUE)
               
     ) %>%
     ungroup() %>%
-    arrange(-median_AUC)
-  
-  combined_stats_data_poor_summary <-
-  combined_stats_data_poor_summary %>%
-    mutate(across(where(is.numeric),
-                  ~round(.x,digits = 3)))
-  
-  write.csv(x =   combined_stats_data_poor_summary,
-            file = "tables/small_sample_size_comparison_to_Valavi_et_al.csv",
-            row.names = FALSE)
-
-
-  combined_stats_all_spp_summary <-
-    combined_stats %>%
-    mutate(model = gsub(pattern = "maxnet",replacement = "Maxnet",x=model))%>%
-    mutate(model = gsub(pattern = "vine",replacement = "Vine",x=model))%>%
-    mutate(model = gsub(pattern = "gaussian",replacement = "Gaussian",x=model))%>%
-    mutate(model = gsub(pattern = "kde",replacement = "KDE",x=model))%>%
-    mutate(model = gsub(pattern = "rangebagging",replacement = "Range-Bagging",x=model))%>%
-    mutate(model = gsub(pattern = "ulsif",replacement = "uLSIF",x=model))%>%
-    mutate(model = gsub(pattern = "lobagoc",replacement = "LOBAG-OC",x=model))%>%
-    group_by(author,model)%>%
-    summarise(median_AUC = median(na.omit(pa_AUC)),
-              mean_AUC = mean(pa_AUC,na.rm=TRUE),
-              median_Corr = median(na.omit(pa_correlation)),
-              mean_Corr = mean(na.omit(pa_correlation)),
-              AUC_Q1 = quantile(x = pa_AUC,
-                                    probs = 0.25,
-                                    na.rm=TRUE),
-              AUC_Q3 = quantile(x = pa_AUC,
-                                     probs = 0.75,
-                                     na.rm=TRUE),
-              correlation_Q1 = quantile(x = pa_correlation,
-                                            probs = 0.25,
-                                            na.rm=TRUE),
-              correlation_Q3 = quantile(x = pa_correlation,
-                                             probs = 0.75,
-                                             na.rm=TRUE)
-              
+    arrange(-median_AUC) |>
+    mutate(across(median_AUC:correlation_Q3, ~round(.x,digits = 3))) |>
+    pivot_longer(
+      cols = matches("^(mean|SD)_"),
+      names_to = c(".value", "var"),
+      names_pattern = "(mean|SD)_(.*)"
     ) %>%
-    ungroup() %>%
-    arrange(-median_AUC)
-  
-  combined_stats_all_spp_summary <-
-    combined_stats_all_spp_summary %>%
-    mutate(across(where(is.numeric),
-                  ~round(.x,digits = 3)))
+    mutate(mean = sprintf("%s (%s)", mean, SD)) %>%
+    select(-SD) %>%
+    pivot_wider(
+      names_from = var,
+      values_from = mean,
+      names_prefix = "mean "
+    )|>
+    relocate(author,model,median_AUC,`mean AUC`,`mean Corr`)
   
   write.csv(x =   combined_stats_all_spp_summary,
             file = "tables/all_sample_size_comparison_to_Valavi_et_al.csv",
