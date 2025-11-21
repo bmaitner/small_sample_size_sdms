@@ -268,50 +268,62 @@ ggsave(filename = "figures/ensemble_metrics.jpg",
 # Need a table equivalent to table 3 for ensembles
    
    
-   ensemble_full %>%
-     select(species,n_presence, contains("sensitivity")|
-              contains("specificity")|
-              contains("prediction")|
-              contains("correlation")|
-              contains("kappa")) %>%
-     select(species,n_presence, contains("pa_")) %>%
-     select(species,n_presence, !contains("pAUC_")) %>%
-     pivot_longer(cols = contains("pa_"))%>%
-     mutate(model = case_when(grepl(pattern = "any_vote",x=name) ~ "ensemble_any_votes",
-                              grepl(pattern = "all_vote",x=name) ~ "ensemble_all_votes",
-                              .default = "ensemble_mean"))%>%
-     mutate(metric = case_when(grepl(pattern = "sensitivity",x=name) ~ "sensitivity",
-                               grepl(pattern = "specificity",x=name) ~ "specificity",
-                               grepl(pattern = "prediction",x=name) ~ "prediction_accuracy",
-                               grepl(pattern = "correlation",x=name) ~ "correlation",
-                               grepl(pattern = "kappa",x=name) ~ "kappa"))%>%
-     select(species,n_presence,value,model,metric)%>%
-     bind_rows(   relevant_full_output %>%
-                    select(species,n_presence, model,
-                           pa_sensitivity,
-                           pa_specificity,
-                           pa_prediction_accuracy,
-                           pa_correlation,
-                           pa_kappa) %>%
-                    pivot_longer(contains("pa_"),names_to = "metric")%>%
-                    mutate(metric = gsub(pattern = "pa_",replacement = "",x=metric))) %>%
-     # mutate(model = factor(x=model,levels = c("ensemble_all_votes","ensemble_mean","ensemble_any_votes",
-     #                                          "kde/kde","rulsif","maxnet")))%>%
-     mutate(model = gsub(pattern = "_",replacement =" ",x=model))%>%
-     mutate(metric = gsub(pattern = "_",replacement =" ",x=metric))%>%
-     mutate(model = factor(x=model,levels = c("ensemble all votes","kde/kde",
-                                              "ensemble mean","rulsif",
-                                              "maxnet","ensemble any votes")))%>%
-     #mutate(metric = factor(x=metric,levels = c("sensitivity","specificity","prediction accuracy")))%>%
-     filter(n_presence <= 20)%>%
-     filter(metric != "correlation")%>%
-     group_by(model,metric) %>%
-     summarise(mean_value = mean(value,na.rm=TRUE))%>%
-     pivot_wider(names_from = "metric", values_from = "mean_value")%>%
-     mutate(TSS = sensitivity+specificity-1) %>%
-     arrange(-specificity)%>%
-     dplyr::select(model,`prediction accuracy`,specificity,sensitivity,kappa,TSS)%>%
-     mutate(across(1:5, function(x){round(x,digits = 2)}))-> ensemble_table
+ensemble_full %>%
+  select(species,n_presence, contains("sensitivity")|
+           contains("specificity")|
+           contains("prediction")|
+           contains("correlation")|
+           contains("kappa")) %>%
+  select(species,n_presence, contains("pa_")) %>%
+  select(species,n_presence, !contains("pAUC_")) %>%
+  mutate(pa_TSS = pa_sensitivity + pa_specificity - 1) %>%
+  mutate(pa_any_vote_TSS = pa_any_vote_sensitivity + pa_any_vote_specificity - 1) %>%
+  mutate(pa_all_vote_TSS = pa_all_vote_sensitivity + pa_all_vote_specificity - 1) %>%
+  pivot_longer(cols = contains("pa_"))%>%
+  mutate(model = case_when(grepl(pattern = "any_vote",x=name) ~ "ensemble_any_votes",
+                           grepl(pattern = "all_vote",x=name) ~ "ensemble_all_votes",
+                           .default = "ensemble_mean"))%>%
+  mutate(metric = case_when(grepl(pattern = "sensitivity",x=name) ~ "sensitivity",
+                            grepl(pattern = "specificity",x=name) ~ "specificity",
+                            grepl(pattern = "prediction",x=name) ~ "prediction_accuracy",
+                            grepl(pattern = "correlation",x=name) ~ "correlation",
+                            grepl(pattern = "kappa",x=name) ~ "kappa",
+                            grepl(pattern = "TSS",x=name) ~ "TSS"))%>%
+  select(species,n_presence,value,model,metric) %>%
+  bind_rows(   relevant_full_output %>%
+                 select(species,n_presence, model,
+                        pa_sensitivity,
+                        pa_specificity,
+                        pa_prediction_accuracy,
+                        pa_correlation,
+                        pa_kappa) %>%
+                 mutate(pa_TSS = pa_sensitivity+pa_specificity-1) %>%
+                 pivot_longer(contains("pa_"),names_to = "metric")%>%
+                 mutate(metric = gsub(pattern = "pa_",replacement = "",x=metric))) %>%
+  # mutate(model = factor(x=model,levels = c("ensemble_all_votes","ensemble_mean","ensemble_any_votes",
+  #                                          "kde/kde","rulsif","maxnet")))%>%
+  mutate(model = gsub(pattern = "_",replacement =" ",x=model))%>%
+  mutate(metric = gsub(pattern = "_",replacement =" ",x=metric))%>%
+  mutate(model = factor(x=model,levels = c("ensemble all votes","kde/kde",
+                                           "ensemble mean","rulsif",
+                                           "maxnet","ensemble any votes")))%>%
+  #mutate(metric = factor(x=metric,levels = c("sensitivity","specificity","prediction accuracy")))%>%
+  filter(n_presence <= 20)%>%
+  filter(metric != "correlation")%>%
+  group_by(model,metric) %>%
+  summarise(mean = mean(value,na.rm=TRUE),
+            sd = sd(value,na.rm=TRUE)) |>
+  ungroup()|>
+  mutate(mean = round(mean,digits = 2),
+         sd = round(sd,digits = 2)) |>
+  mutate(mean = sprintf("%s (%s)", mean, sd)) |>
+  select(model,metric,mean) |>
+  pivot_wider(
+    names_from = metric,
+    values_from = mean,
+  ) |>
+  arrange(desc(specificity)) |>
+  relocate(model,`prediction accuracy`,specificity,sensitivity,kappa,TSS) -> ensemble_table
    
    ensemble_table
    
