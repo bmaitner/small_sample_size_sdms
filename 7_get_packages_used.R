@@ -1,5 +1,6 @@
 library(questionr)
 library(tidyverse)
+library(renv)
 
 packages_used <- questionr::qscan(load = FALSE) %>%
   unlist() %>%
@@ -7,3 +8,6 @@ packages_used <- questionr::qscan(load = FALSE) %>%
   unique()
 
 data.frame(packages = packages_used)
+
+#renv::init()
+renv::snapshot()

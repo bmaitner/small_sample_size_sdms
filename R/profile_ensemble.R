@@ -59,14 +59,14 @@ profile_ensemble <- function(csv_file,
       
   # Get background
     
-    bg <- pbsdm::get_env_bg(coords = occs[c("lon","lat")],
+    bg <- S4DM::get_env_bg(coords = occs[c("lon","lat")],
                       env = env,
                       standardize = FALSE,
                       width = 100000)
     
   # Get presence  
     
-    pres <- pbsdm::get_env_pres(coords = occs[c("lon","lat")],
+    pres <- S4DM::get_env_pres(coords = occs[c("lon","lat")],
                       env = env)
     
   # Make message vector
@@ -85,7 +85,7 @@ profile_ensemble <- function(csv_file,
       # fit model
         if(length(model_i) == 2){
           
-          fitted_i <- tryCatch(pbsdm::fit_plug_and_play(presence = pres$env,
+          fitted_i <- tryCatch(S4DM::fit_plug_and_play(presence = pres$env,
                                    background = bg$env,
                                    presence_method =  model_i[1],
                                    background_method = model_i[2]),
@@ -93,7 +93,7 @@ profile_ensemble <- function(csv_file,
           
         }else{
   
-          fitted_i <- tryCatch(pbsdm::fit_density_ratio(presence = pres$env,
+          fitted_i <- tryCatch(S4DM::fit_density_ratio(presence = pres$env,
                                                background = bg$env,
                                                method = model_i[1]),
                                error = function(e){e})
@@ -127,13 +127,13 @@ profile_ensemble <- function(csv_file,
         if(length(model_i) == 2){
   
           
-          projected_i <- pbsdm::project_plug_and_play(pnp_model = fitted_i,
+          projected_i <- S4DM::project_plug_and_play(pnp_model = fitted_i,
                                        data = bg$env)
                   
   
         }else{
           
-          projected_i <- pbsdm::project_density_ratio(dr_model = fitted_i,
+          projected_i <- S4DM::project_density_ratio(dr_model = fitted_i,
                                        data = bg$env)
           
         }
