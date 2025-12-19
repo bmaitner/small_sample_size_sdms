@@ -290,9 +290,9 @@ if(!file.exists("outputs/ensemble_profile_100.RDS")){
                                 fill=Support),
                   alpha=0.3,
                   inherit.aes = FALSE)+
-    xlab("Number of Occurrence Records")+
+    xlab("Number of occurrence records")+
     #ylab("Proportion of Predicted Locations")+
-    ylab("Proportion of Predicted Locations \nwith Total Model Consensus")+
+    ylab("Proportion of predicted locations \nwith total model consensus")+
     theme_bw()+
     scale_color_viridis_d()+
     scale_x_continuous(expand=c(0,0))+
@@ -309,7 +309,8 @@ if(!file.exists("outputs/ensemble_profile_100.RDS")){
            plot =     ensemble_v_occs_plot,
            units = "in",
            width = 10,
-           height = 5)
+           height = 5,
+           dpi = 300)
     
     ggsave(filename = "figures/ensemble_agreement_v_occs.svg",
            plot =     ensemble_v_occs_plot,
