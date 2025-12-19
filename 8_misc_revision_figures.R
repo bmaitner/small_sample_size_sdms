@@ -804,8 +804,8 @@ max(presence_counts$n_presence)#5822
       geom_point()+
       stat_cor(method = "pearson",label.x = 0.7)+
       theme_bw()+
-      xlab("Sensitivity/Specificity Distance")+
-      ylab("Jaccard Similarity")
+      xlab("Sensitivity/specificity distance")+
+      ylab("Jaccard similarity")
     
     sensspec_vagreement_plot <-
     sensspec_v_agreement %>%
@@ -817,8 +817,8 @@ max(presence_counts$n_presence)#5822
       geom_point()+
       stat_cor(method = "pearson",label.x = 0.7)+
       theme_bw()+
-      xlab("Sensitivity/Specificity Distance")+
-      ylab("Model Agreement")
+      xlab("Sensitivity/specificity distance")+
+      ylab("Model agreement")
     
     ggsave(filename = "figures/sensspec_vagreement_plot.jpeg",
            plot = sensspec_vagreement_plot,
